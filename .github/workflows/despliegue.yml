@@ -19,7 +19,7 @@ jobs:
       run: dotnet publish -c Release -o release --nologo
 
     - name: Cambiar rutas para GitHub Pages
-      run: sed -i 's/<base href="\/" \/>/<base href="\/MindBattle\/" \/>/g' release/wwwroot/index.html
+      run: sed -i 's|<base href="/" />|<base href="/MindBattle/" />|g' release/wwwroot/index.html
 
     - name: Entregar a GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
