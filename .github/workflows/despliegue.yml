@@ -1,0 +1,28 @@
+name: Desplegar Blazor a GitHub Pages
+
+on:
+  push:
+    branches: [ main ] # Se ejecuta solo cuando subís cambios a la rama main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configurar .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '10.0.x' # Usamos .NET 10 en sintonía con tu servidor
+
+    - name: Publicar Proyecto Cliente
+      run: dotnet publish -c Release -o release --nologo
+
+    - name: Cambiar rutas para GitHub Pages
+      run: sed -i 's/<base href="\/" \/>/<base href="\/MindBattle\/" \/>/g' release/wwwroot/index.html
+
+    - name: Entregar a GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: release/wwwroot
+        branch: gh-pages # Sube los archivos listos a una rama de publicación

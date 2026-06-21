@@ -1,0 +1,389 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap');
+    /* Forzamos que el fondo ocupe todo el espacio sin márgenes blancos de la plantilla base */
+    .mb-global-container {
+        font-family: 'Nunito', sans-serif;
+        background-color: #120C2E;
+        color: white;
+        padding: 30px 20px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .fredoka-text {
+        font-family: 'Fredoka One', sans-serif;
+    }
+</style>
+
+<div class="mb-global-container">
+
+    <div style="display: inline-flex; align-items: center; gap: 14px; background: #1A103C; border-radius: 20px; padding: 12px 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 5px;">
+        <svg width="42" height="42" viewBox="0 0 56 56">
+            <circle cx="28" cy="28" r="28" fill="#FFD93D" />
+            <ellipse cx="22" cy="26" rx="10" ry="12" fill="#FF6B6B" />
+            <ellipse cx="34" cy="26" rx="10" ry="12" fill="#FF6B6B" />
+            <rect x="26" y="16" width="4" height="20" fill="#FFD93D" rx="2" />
+            <ellipse cx="22" cy="26" rx="7" ry="9" fill="#FF8E8E" />
+            <ellipse cx="34" cy="26" rx="7" ry="9" fill="#FF8E8E" />
+            <polygon points="31,18 28,26 32,26 29,36 36,24 31,24" fill="#FFD93D" />
+            <circle cx="20" cy="32" r="2.5" fill="white" />
+            <circle cx="36" cy="32" r="2.5" fill="white" />
+            <circle cx="20.8" cy="32.8" r="1.2" fill="#1A103C" />
+            <circle cx="36.8" cy="32.8" r="1.2" fill="#1A103C" />
+        </svg>
+        <div style="text-align: left; line-height: 1.0;">
+            <span class="fredoka-text" style="font-size: 26px; color: #FFD93D; letter-spacing: 0.5px;">Mind</span>
+            <span class="fredoka-text" style="font-size: 26px; color: #FF6B6B; letter-spacing: 0.5px;">Battle</span>
+        </div>
+    </div>
+
+    <p style="color: #4ECDC4; font-size: 13px; font-weight: 700; margin-bottom: 20px;">Red: @estadoConexion</p>
+
+    @if (partidaIniciada && !partidaFinalizada)
+    {
+        <div class="fredoka-text" style="background-color: @(miRolDeJugador == 1 ? "#4ECDC4" : "#C77DFF"); color: #1A103C; padding: 4px 16px; border-radius: 20px; font-size: 13px; margin-bottom: 25px; box-shadow: 0 0 10px rgba(255,255,255,0.1);">
+            ESTÁS EN LA PANTALLA DEL: JUGADOR @miRolDeJugador
+        </div>
+    }
+
+    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; width: 100%; max-width: 500px; align-items: center; margin-bottom: 25px;">
+
+        <div style="background: #1A103C; border-radius: 12px; padding: 12px; text-align: center; border: 2px solid @(turnoActual == 1 ? "#4ECDC4" : "#4ECDC422"); box-shadow: @(turnoActual == 1 ? "0 0 15px rgba(78,205,196,0.4)" : "none"); transition: all 0.2s;">
+            <div class="fredoka-text" style="font-size: 14px; color: #4ECDC4;">Jugador 1</div>
+            <div class="fredoka-text" style="font-size: 28px; color: white; margin: 2px 0;">@puntosJ1</div>
+            <div style="font-size: 10px; color: #4ECDC4; font-weight: bold; visibility: @(turnoActual == 1 ? "visible" : "hidden");">▶ TURNO</div>
+        </div>
+
+        <div class="fredoka-text" style="font-size: 20px; color: #FFD93D; text-align: center;">VS</div>
+
+        <div style="background: #1A103C; border-radius: 12px; padding: 12px; text-align: center; border: 2px solid @(turnoActual == 2 ? "#C77DFF" : "#C77DFF22"); box-shadow: @(turnoActual == 2 ? "0 0 15px rgba(199,125,255,0.4)" : "none"); transition: all 0.2s;">
+            <div class="fredoka-text" style="font-size: 14px; color: #C77DFF;">Jugador 2</div>
+            <div class="fredoka-text" style="font-size: 28px; color: white; margin: 2px 0;">@puntosJ2</div>
+            <div style="font-size: 10px; color: #C77DFF; font-weight: bold; visibility: @(turnoActual == 2 ? "visible" : "hidden");">▶ TURNO</div>
+        </div>
+    </div>
+
+    @if (!partidaIniciada)
+    {
+        <button class="fredoka-text" style="background-color: #6BFF6B; color: #1A103C; font-weight: bold; border: none; padding: 16px 45px; font-size: 18px; border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(107,255,107,0.6); margin-top: 30px; transition: transform 0.1s;"
+                @onclick="IniciarJuegoEnServidor" disabled="@(!EstaConectado)">
+            ¡PRESIONA JUGAR!
+        </button>
+    }
+    else
+    {
+        @if (!partidaFinalizada)
+        {
+            <div style="width: 100%; max-width: 500px; background-color: #1A103C; padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+
+                <div style="margin-bottom: 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.5); letter-spacing: 0.05em;">TIEMPO LÍMITE</span>
+                        <span class="fredoka-text" style="font-size: 14px; color: @(segundosReloj <= 5 ? "#FF6B6B" : "#FFD93D");">⏱ @segundosReloj s</span>
+                    </div>
+                    <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div style="height: 100%; width: @((segundosReloj * 100) / 30)%; background-color: @(segundosReloj <= 5 ? "#FF6B6B" : "#FFD93D"); border-radius: 4px; transition: width 1s linear;"></div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(mensajeAlertaRonda))
+                {
+                    <p style="color: #FF6B6B; font-weight: bold; font-size: 14px; margin: 10px 0; text-align: center;">@mensajeAlertaRonda</p>
+                }
+
+                <div style="font-size: 11px; font-weight: 800; color: #4ECDC4; letter-spacing: .06em; margin-bottom: 6px; text-align: left;">
+                    @temaActual
+                </div>
+
+                <h2 style="font-size: 16px; font-weight: 800; color: white; line-height: 1.4; text-align: left; margin-top: 0; margin-bottom: 20px; min-height: 45px;">
+                    @preguntaTexto
+                </h2>
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+
+                    <button style="background-color: @colorBtn1; @ObtenerEstiloBotonDinamico(0)" @onclick="() => EnviarRespuesta(0)" disabled="@botonesBloqueadosEfectivos">
+                        <div style="width: 26px; height: 26px; border-radius: 6px; background: @(colorBtn1 == "#FFD93D" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.25)"); display: flex; align-items: center; justify-content: center; font-family: 'Fredoka One', sans-serif; font-size: 14px; color: @(colorBtn1 == "#FFD93D" ? "#1A103C" : "white"); flex-shrink: 0;">A</div>
+                        <span style="font-size: 13px; font-weight: 700; text-align: left;">@opcion1</span>
+                    </button>
+
+                    <button style="background-color: @colorBtn2; @ObtenerEstiloBotonDinamico(1)" @onclick="() => EnviarRespuesta(1)" disabled="@botonesBloqueadosEfectivos">
+                        <div style="width: 26px; height: 26px; border-radius: 6px; background: @(colorBtn2 == "#FFD93D" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.25)"); display: flex; align-items: center; justify-content: center; font-family: 'Fredoka One', sans-serif; font-size: 14px; color: @(colorBtn2 == "#FFD93D" ? "#1A103C" : "white"); flex-shrink: 0;">B</div>
+                        <span style="font-size: 13px; font-weight: 700; text-align: left;">@opcion2</span>
+                    </button>
+
+                    <button style="background-color: @colorBtn3; @ObtenerEstiloBotonDinamico(2)" @onclick="() => EnviarRespuesta(2)" disabled="@botonesBloqueadosEfectivos">
+                        <div style="width: 26px; height: 26px; border-radius: 6px; background: @(colorBtn3 == "#FFD93D" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.25)"); display: flex; align-items: center; justify-content: center; font-family: 'Fredoka One', sans-serif; font-size: 14px; color: @(colorBtn3 == "#FFD93D" ? "#1A103C" : "white"); flex-shrink: 0;">C</div>
+                        <span style="font-size: 13px; font-weight: 700; text-align: left;">@opcion3</span>
+                    </button>
+
+                    <button style="background-color: @colorBtn4; @ObtenerEstiloBotonDinamico(3)" @onclick="() => EnviarRespuesta(3)" disabled="@botonesBloqueadosEfectivos">
+                        <div style="width: 26px; height: 26px; border-radius: 6px; background: @(colorBtn4 == "#FFD93D" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.25)"); display: flex; align-items: center; justify-content: center; font-family: 'Fredoka One', sans-serif; font-size: 14px; color: @(colorBtn4 == "#FFD93D" ? "#1A103C" : "white"); flex-shrink: 0;">D</div>
+                        <span style="font-size: 13px; font-weight: 700; text-align: left;">@opcion4</span>
+                    </button>
+
+                </div>
+
+                @if (miRolDeJugador != turnoActual && !rondaCongelada)
+                {
+                    <p style="color: #FFD93D; font-size: 13px; margin-top: 15px; font-style: italic; text-align: center;">Esperando que tu rival responda...</p>
+                }
+            </div>
+        }
+        else
+        {
+            <div style="width: 100%; max-width: 480px; margin: 0 auto; background-color: #1A103C; padding: 30px; border-radius: 16px; border: 2px solid #6BFF6B; box-shadow: 0 0 25px rgba(107,255,107,0.2); text-align: center;">
+
+                <h2 class="fredoka-text" style="color: #6BFF6B; font-size: 26px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(107,255,107,0.4);">
+                    ¡FIN DE LA BATALLA!
+                </h2>
+
+                <p class="fredoka-text" style="color: #FFD93D; font-size: 16px; margin-bottom: 25px;">@mensajeGanador</p>
+
+                <div style="display: flex; flex-direction: column; gap: 12px; background-color: #120C2E; padding: 18px; border-radius: 10px; border: 1px solid rgba(199,125,255,0.3); text-align: left; margin-bottom: 25px;">
+                    <h4 class="fredoka-text" style="margin: 0 0 5px 0; color: #4ECDC4; text-align: center; letter-spacing: 0.05em; font-size: 14px;">REPORTE TÁCTICO</h4>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span>🎯 Aciertos Jugador 1:</span>
+                        <span style="color: #4ECDC4; font-weight: bold;">@puntosJ1 / 10</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;">
+                        <span>📈 Eficiencia J1:</span>
+                        <span style="color: #4ECDC4;">@eficiencialJ1%</span>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
+                        <span>🎯 Aciertos Jugador 2:</span>
+                        <span style="color: #C77DFF; font-weight: bold;">@puntosJ2 / 10</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span>📈 Eficiencia J2:</span>
+                        <span style="color: #C77DFF;">@eficiencialJ2%</span>
+                    </div>
+                </div>
+
+                <button class="fredoka-text" style="background-color: #FFD93D; color: #1A103C; font-weight: bold; border: none; padding: 14px 35px; font-size: 16px; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,217,61,0.3);"
+                        @onclick="IniciarJuegoEnServidor">
+                    🔄 NUEVA BATALLA
+                </button>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    // Paleta de colores nativa del manual de marca
+    private string colorBtn1 = "#FF6B6B";
+    private string colorBtn2 = "#4ECDC4";
+    private string colorBtn3 = "#C77DFF";
+    private string colorBtn4 = "#FFD93D";
+
+    private HubConnection? hubConnection;
+    private string estadoConexion = "Desconectado";
+    private bool partidaIniciada = false;
+    private int miRolDeJugador = 0;
+    private bool rondaCongelada = false;
+    private int segundosReloj = 30;
+    private string mensajeAlertaRonda = "";
+
+    // Control de finalización
+    private bool partidaFinalizada = false;
+    private string mensajeGanador = "";
+    private int eficiencialJ1 = 0;
+    private int eficiencialJ2 = 0;
+
+    private bool botonesBloqueadosEfectivos => rondaCongelada || (miRolDeJugador != turnoActual);
+
+    private string temaActual = "TEMA";
+    private string preguntaTexto = "";
+    private string opcion1 = "", opcion2 = "", opcion3 = "", opcion4 = "";
+    private List<string> tagsActuales = new List<string>();
+
+    private int puntosJ1 = 0;
+    private int puntosJ2 = 0;
+    private int turnoActual = 1;
+
+    // Generador dinámico de estilos de botones alineado con el mockup
+    private string ObtenerEstiloBotonDinamico(int indice)
+    {
+        string colorTexto = "white";
+        // Si el botón tiene color Sunshine (#FFD93D) o Lime Win (#6BFF6B), el texto va oscuro
+        if ((indice == 0 && (colorBtn1 == "#FFD93D" || colorBtn1 == "#6BFF6B")) ||
+            (indice == 1 && (colorBtn2 == "#FFD93D" || colorBtn2 == "#6BFF6B")) ||
+            (indice == 2 && (colorBtn3 == "#FFD93D" || colorBtn3 == "#6BFF6B")) ||
+            (indice == 3 && (colorBtn4 == "#FFD93D" || colorBtn4 == "#6BFF6B")))
+        {
+            colorTexto = "#1A103C";
+        }
+
+        return $"color: {colorTexto}; border: none; padding: 12px 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; width: 100%; font-family: 'Nunito', sans-serif; opacity: {(botonesBloqueadosEfectivos ? "0.6" : "1")}; transition: transform 0.1s;";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("https://mindbattle-server.onrender.com/gamehub")
+            .Build();
+
+        hubConnection.On<int>("AsignarRolJugador", (rol) =>
+        {
+            miRolDeJugador = rol;
+            StateHasChanged();
+        });
+
+        hubConnection.On("PartidaReiniciada", () =>
+        {
+            puntosJ1 = 0;
+            puntosJ2 = 0;
+            partidaIniciada = true;
+            partidaFinalizada = false;
+            rondaCongelada = false;
+            StateHasChanged();
+        });
+
+        hubConnection.On<string, string, List<string>, List<string>, int>("RecibirPreguntaNueva", (tema, pregunta, opciones, tags, turno) =>
+        {
+            temaActual = tema;
+            preguntaTexto = pregunta;
+
+            opcion1 = opciones[0];
+            opcion2 = opciones[1];
+            opcion3 = opciones[2];
+            opcion4 = opciones[3];
+
+            tagsActuales = tags;
+            turnoActual = turno;
+
+            colorBtn1 = "#FF6B6B";
+            colorBtn2 = "#4ECDC4";
+            colorBtn3 = "#C77DFF";
+            colorBtn4 = "#FFD93D";
+
+            mensajeAlertaRonda = "";
+            segundosReloj = 30;
+            rondaCongelada = false;
+            StateHasChanged();
+        });
+
+        hubConnection.On<int, bool, int, int, int, string>("ResultadoProcesado", (jugador, esCorrecta, indiceBoton, nuevosPuntosJ1, nuevosPuntosJ2, tagCorrecto) =>
+        {
+            rondaCongelada = true;
+
+            puntosJ1 = nuevosPuntosJ1;
+            puntosJ2 = nuevosPuntosJ2;
+
+            // #6BFF6B es Lime Win (correcto) — #FF6B6B es Coral Burst (incorrecto)
+            string colorResultado = esCorrecta ? "#6BFF6B" : "#FF6B6B";
+            CambiarColorBoton(indiceBoton, colorResultado);
+
+            if (!esCorrecta && tagCorrecto != null)
+            {
+                int indiceCorrecto = tagsActuales.IndexOf(tagCorrecto);
+                if (indiceCorrecto != -1)
+                {
+                    CambiarColorBoton(indiceCorrecto, "#6BFF6B");
+                }
+            }
+
+            StateHasChanged();
+        });
+
+        hubConnection.On<int>("ActualizarTemporizador", async (tiempo) =>
+        {
+            await InvokeAsync(() =>
+            {
+                segundosReloj = tiempo;
+                StateHasChanged();
+            });
+        });
+
+        hubConnection.On<int>("TiempoAgotadoNotificacion", async (jugadorMalo) =>
+        {
+            await InvokeAsync(() =>
+            {
+                rondaCongelada = true;
+                mensajeAlertaRonda = $"¡Tiempo agotado para el Jugador {jugadorMalo}! ⏱️❌";
+                StateHasChanged();
+            });
+        });
+
+        hubConnection.On<int, int, int, int>("PartidaFinalizada", async (aciertosJ1, totalJ1, aciertosJ2, totalJ2) =>
+        {
+            await InvokeAsync(() =>
+            {
+                partidaFinalizada = true;
+                rondaCongelada = true;
+
+                eficiencialJ1 = totalJ1 > 0 ? (aciertosJ1 * 100) / totalJ1 : 0;
+                eficiencialJ2 = totalJ2 > 0 ? (aciertosJ2 * 100) / totalJ2 : 0;
+
+                if (aciertosJ1 >= 10 && aciertosJ2 >= 10)
+                {
+                    mensajeGanador = "¡INCREÍBLE! ¡EMPATE TÉCNICO! 🤝";
+                }
+                else if (aciertosJ1 >= 10)
+                {
+                    mensajeGanador = "👑 ¡EL JUGADOR 1 REINA EN MIND_BATTLE! 👑";
+                }
+                else
+                {
+                    mensajeGanador = "👑 ¡EL JUGADOR 2 REINA EN MIND_BATTLE! 👑";
+                }
+
+                StateHasChanged();
+            });
+        });
+
+        try
+        {
+            estadoConexion = "Conectando al servidor...";
+            await hubConnection.StartAsync();
+            estadoConexion = "¡ONLINE! 🟢";
+        }
+        catch (Exception ex)
+        {
+            estadoConexion = $"Error de Red: {ex.Message}";
+        }
+    }
+
+    private async Task IniciarJuegoEnServidor()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("IniciarPartida");
+        }
+    }
+
+    private async Task EnviarRespuesta(int indiceBoton)
+    {
+        if (hubConnection is not null && partidaIniciada && !rondaCongelada)
+        {
+            string respuestaReal = tagsActuales[indiceBoton];
+            await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaReal);
+        }
+    }
+
+    private void CambiarColorBoton(int indice, string colorHex)
+    {
+        if (indice == 0) colorBtn1 = colorHex;
+        if (indice == 1) colorBtn2 = colorHex;
+        if (indice == 2) colorBtn3 = colorHex;
+        if (indice == 3) colorBtn4 = colorHex;
+    }
+
+    public bool EstaConectado => hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
