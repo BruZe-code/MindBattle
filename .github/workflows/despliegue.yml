@@ -20,6 +20,9 @@ jobs:
 
     - name: Cambiar rutas para GitHub Pages
       run: sed -i 's|<base href="/" />|<base href="/MindBattle/" />|g' release/wwwroot/index.html
+   
+    - name: Crear archivo .nojekyll
+      run: touch release/wwwroot/.nojekyll
 
     - name: Entregar a GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
