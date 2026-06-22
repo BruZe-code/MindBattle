@@ -288,7 +288,6 @@
 
     private int botonPresionadoLocal = -1;
     private int indiceCorrectoBoton = -1;
-    private string tagGanadorDeLaRonda = ""; // Almacenador para match local
 
     private string textoRespuestaCorrectaRonda = "";
 
@@ -299,20 +298,16 @@
     private bool rondaCongelada = false;
     private int segundosReloj = 30;
     private string mensajeAlertaRonda = "";
-
     private bool partidaFinalizada = false;
     private string mensajeGanador = "";
     private int eficiencialJ1 = 0;
     private int eficiencialJ2 = 0;
-
     private bool esAdministrador => miRolDeJugador == 1;
     private bool botonesBloqueadosEfectivos => rondaCongelada || (!modoSolitario && (miRolDeJugador != turnoActual));
-
     private string temaActual = "TEMA";
     private string preguntaTexto = "";
     private string opcion1 = "", opcion2 = "", opcion3 = "", opcion4 = "";
     private List<string> tagsActuales = new List<string>();
-
     private int puntosJ1 = 0;
     private int puntosJ2 = 0;
     private int turnoActual = 1;
@@ -348,13 +343,32 @@
 
             if (opciones != null && opciones.Count > 0)
             {
+                // 🎯 Resguardamos el texto de la respuesta correcta original (que siempre viene primero)
                 textoRespuestaCorrectaRonda = opciones[0];
 
-                // Al estar acá adentro, el compilador sabe al 100% que 'opciones' no es nulo
-                opcion1 = opciones[0];
-                opcion2 = opciones[1];
-                opcion3 = opciones[2];
-                opcion4 = opciones[3];
+                // Clonamos la lista para poder barajarla de forma local
+                var opcionesMezcladasLocales = new List<string>(opciones);
+
+                // 🧠 Si es Solitario, barajamos las cartas en el cliente para que roten por los botones A, B, C y D
+                if (modoSolitario)
+                {
+                    var rand = new Random();
+                    int n = opcionesMezcladasLocales.Count;
+                    while (n > 1)
+                    {
+                        n--;
+                        int k = rand.Next(n + 1);
+                        string value = opcionesMezcladasLocales[k];
+                        opcionesMezcladasLocales[k] = opcionesMezcladasLocales[n];
+                        opcionesMezcladasLocales[n] = value;
+                    }
+                }
+
+                // Asignamos las opciones desordenadas a los botones de pantalla
+                opcion1 = opcionesMezcladasLocales[0];
+                opcion2 = opcionesMezcladasLocales[1];
+                opcion3 = opcionesMezcladasLocales[2];
+                opcion4 = opcionesMezcladasLocales[3];
             }
 
             tagsActuales = tags;
@@ -371,7 +385,6 @@
 
         hubConnection.On<int, bool, int, int, int, string>("ResultadoProcesado", async (jugador, esCorrecta, indiceBoton, nuevosPuntosJ1, nuevosPuntosJ2, tagCorrecto) =>
         {
-            // Bloqueamos el flujo solo en modo multijugador, ya que en solitario nos manejamos local
             if (modoSolitario) return;
 
             rondaCongelada = true;
@@ -385,7 +398,6 @@
                 indiceCorrectoBoton = tagsActuales.IndexOf(tagCorrecto);
             }
 
-            // El feedback de sonido online se ejecuta sincronizado acá al llegar el paquete
             if (jugador == miRolDeJugador)
             {
                 if (esCorrecta)
@@ -506,7 +518,6 @@
     private async Task ProcesarSeleccionOpcion(int indiceBoton)
     {
         if (rondaCongelada) return;
-
         string respuestaSeleccionada = tagsActuales[indiceBoton];
 
         if (modoSolitario)
@@ -514,13 +525,12 @@
             botonPresionadoLocal = indiceBoton;
             rondaCongelada = true;
 
-            // 🟢 ARMAMOS EL MAPA DE TEXTOS REALES DE TUS BOTONES
+            // Armamos el mapa dinámico con las opciones mezcladas locales
             var textosBotones = new List<string> { opcion1, opcion2, opcion3, opcion4 };
-
-            // Buscamos matemáticamente en cuál de los 4 botones quedó el texto correcto
+            
+            // Buscamos matemáticamente en cuál de los 4 casilleros quedó la ganadora
             indiceCorrectoBoton = textosBotones.IndexOf(textoRespuestaCorrectaRonda);
 
-            // Si el botón que tocaste coincide con el índice del texto verdadero: ¡ACIERTO COMPLETO!
             if (indiceBoton == indiceCorrectoBoton)
             {
                 aciertosSolitario++;
@@ -533,9 +543,9 @@
                 await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
             }
 
-            StateHasChanged(); // Pinta instantáneamente los bloques sólidos (image_1e6c12.png)
+            StateHasChanged();
 
-            await Task.Delay(1500); // Sostiene el feedback visual 1.5 segundos
+            await Task.Delay(1500);
 
             if (tiempoContrarreloj > 0 && !partidaFinalizada)
             {
@@ -543,6 +553,14 @@
                 {
                     await hubConnection.SendAsync("IniciarPartida");
                 }
+            }
+        }
+        else
+        {
+            // ⚔️ MODO MULTIJUGADOR ONLINE RESTAURADO
+            if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
+            {
+                await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
             }
         }
     }
