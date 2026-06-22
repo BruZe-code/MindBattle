@@ -6,7 +6,7 @@
 
 <style>
     @@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap');
-    
+
     .mb-global-container {
         font-family: 'Nunito', sans-serif;
         background-color: #120C2E;
@@ -61,15 +61,15 @@
         <!-- ========================================================================= -->
         <div style="width: 100%; max-width: 450px; background: #1A103C; padding: 35px 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; margin-top: 20px;">
             <h3 class="fredoka-text" style="color: white; font-size: 20px; margin-bottom: 25px; letter-spacing: 0.5px;">¿CÓMO DESEAS JUGAR HOY?</h3>
-            
+
             <div style="display: flex; flex-direction: column; gap: 16px;">
-                <button class="fredoka-text" 
+                <button class="fredoka-text"
                         style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #1A103C; font-weight: bold; border: none; padding: 18px; font-size: 16px; border-radius: 14px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); transition: transform 0.1s;"
                         @onclick="ArrancarModoMultijugador" disabled="@(!EstaConectado)">
                     COMPETITIVO ONLINE ⚔️
                 </button>
-                
-                <button class="fredoka-text" 
+
+                <button class="fredoka-text"
                         style="background: linear-gradient(135deg, #FF6FB5 0%, #ff5858 100%); color: white; font-weight: bold; border: none; padding: 18px; font-size: 16px; border-radius: 14px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 111, 181, 0.3); transition: transform 0.1s;"
                         @onclick="ArrancarModoContrarreloj" disabled="@(!EstaConectado)">
                     CONTRARRELOJ SOLITARIO ⏱️
@@ -129,7 +129,7 @@
             <div style="width: 100%; max-width: 500px; background-color: #1A103C; padding: 30px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <div class="fredoka-text" style="font-size: 18px; color: #4ECDC4; margin-bottom: 10px;">LOBBY MULTIJUGADOR</div>
                 <p style="color: rgba(255,255,255,0.7); font-size: 14px;">Esperando que el Administrador de la partida dé la orden de salida...</p>
-                
+
                 @if (esAdministrador)
                 {
                     <button class="fredoka-text" style="background-color: #6BFF6B; color: #1A103C; font-weight: bold; border: none; padding: 16px 45px; font-size: 18px; border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(107,255,107,0.6); margin-top: 15px; transition: transform 0.1s;"
@@ -180,7 +180,7 @@
                         {
                             var index = i;
                             string textoOpcion = index == 0 ? opcion1 : index == 1 ? opcion2 : index == 2 ? opcion3 : opcion4;
-                            
+
                             string colorBaseBoton = index == 0 ? "#FF6FB5" : index == 1 ? "#4ECDC4" : index == 2 ? "#C77DFF" : "#FFD93D";
                             string estiloBoton = $"background-color: {colorBaseBoton}; color: {(colorBaseBoton == "#FFD93D" ? "#1A103C" : "white")}; font-weight: 700; border: none;";
                             string estiloBadge = $"background-color: {(colorBaseBoton == "#FFD93D" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.25)")}; color: {(colorBaseBoton == "#FFD93D" ? "#1A103C" : "white")};";
@@ -202,15 +202,15 @@
                                 }
                             }
 
-                            <button class="clan-boton-neon" 
-                                    style="@estiloBoton padding: 14px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; width: 100%; font-family: 'Nunito', sans-serif; transition: all 0.1s ease; opacity: @(rondaCongelada && index != indiceCorrectoBoton && index != botonPresionadoLocal ? "0.4" : "1");" 
-                                    @onclick="() => ProcesarSelectionOpcion(index)" 
+                            <button class="clan-boton-neon"
+                                    style="@estiloBoton padding: 14px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; width: 100%; font-family: 'Nunito', sans-serif; transition: all 0.1s ease; opacity: @(rondaCongelada && index != indiceCorrectoBoton && index != botonPresionadoLocal ? "0.4" : "1");"
+                                    @onclick="() => ProcesarSeleccionOpcion(index)"
                                     disabled="@botonesBloqueadosEfectivos">
-                                
+
                                 <div class="fredoka-text" style="@estiloBadge width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-right: 12px;">
                                     @(Convert.ToChar(65 + index))
                                 </div>
-                                
+
                                 <span style="font-size: 14px; text-align: left;">@textoOpcion@iconoFeedback</span>
                             </button>
                         }
@@ -282,7 +282,7 @@
     private bool mostrandoMenuInicial = true;
     private bool modoSolitario = false;
 
-    private int tiempoContrarreloj = 45; 
+    private int tiempoContrarreloj = 45;
     private int aciertosSolitario = 0;
     private System.Threading.Timer? timerSolitario;
 
@@ -356,12 +356,12 @@
             // antes de mandar los tags mezclados. Resguardamos el primer elemento para mapear en solitario.
             if (tags != null && tags.Count > 0)
             {
-                tagGanadorDeLaRonda = tags[0]; 
+                tagGanadorDeLaRonda = tags[0];
             }
 
             mensajeAlertaRonda = "";
             segundosReloj = 30;
-            
+
             rondaCongelada = false;
             botonPresionadoLocal = -1;
             indiceCorrectoBoton = -1;
@@ -370,6 +370,7 @@
 
         hubConnection.On<int, bool, int, int, int, string>("ResultadoProcesado", async (jugador, esCorrecta, indiceBoton, nuevosPuntosJ1, nuevosPuntosJ2, tagCorrecto) =>
         {
+            // Bloqueamos el flujo solo en modo multijugador, ya que en solitario nos manejamos local
             if (modoSolitario) return;
 
             rondaCongelada = true;
@@ -383,6 +384,7 @@
                 indiceCorrectoBoton = tagsActuales.IndexOf(tagCorrecto);
             }
 
+            // El feedback de sonido online se ejecuta sincronizado acá al llegar el paquete
             if (jugador == miRolDeJugador)
             {
                 if (esCorrecta)
@@ -413,7 +415,7 @@
             {
                 rondaCongelada = true;
                 mensajeAlertaRonda = $"¡Tiempo agotado para el Jugador {jugadorMalo}! ⏱️❌";
-                
+
                 if (jugadorMalo == miRolDeJugador)
                 {
                     await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
@@ -477,7 +479,7 @@
 
         if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
         {
-            _ = hubConnection.SendAsync("IniciarPartida"); 
+            _ = hubConnection.SendAsync("IniciarPartida");
         }
 
         timerSolitario = new System.Threading.Timer(async (_) =>
@@ -500,48 +502,53 @@
         modoSolitario = false;
     }
 
-    private async Task ProcesarSelectionOpcion(int indiceBoton)
+    private async Task ProcesarSeleccionOpcion(int indiceBoton)
     {
         if (rondaCongelada) return;
 
-        botonPresionadoLocal = indiceBoton;
-        rondaCongelada = true;
+        string respuestaSeleccionada = tagsActuales[indiceBoton];
 
         if (modoSolitario)
         {
-            // 🟢 EVALUACIÓN INDEPENDIENTE DEL TURNO DEL BACKEND
-            // Buscamos dinámicamente cuál de los 4 botones contiene el tag ganador resguardado
+            // Congelamos la pantalla de forma local inmediatamente
+            botonPresionadoLocal = indiceBoton;
+            rondaCongelada = true;
+
+            // 🟢 ASIGNACIÓN COMPLETA PARA SOLITARIO:
+            // Buscamos cuál de los 4 botones contiene exactamente el tag ganador que resguardó el servidor
             indiceCorrectoBoton = tagsActuales.IndexOf(tagGanadorDeLaRonda);
 
-            if (indiceCorrectoBoton == -1) indiceCorrectoBoton = 0; 
-
+            // Si tu índice seleccionado coincide con el índice donde está alojado el tag ganador: ¡ES UN ACIERTO!
             if (indiceBoton == indiceCorrectoBoton)
             {
                 aciertosSolitario++;
-                tiempoContrarreloj += 3;
+                tiempoContrarreloj += 3; // Recompensa: +3 segundos ⏱️
                 await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
             }
             else
             {
-                tiempoContrarreloj -= 5;
+                tiempoContrarreloj -= 5; // Penalización: -5 segundos ⏱️
                 await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
             }
 
-            StateHasChanged(); 
+            StateHasChanged(); // Renderiza al instante los bloques sólidos idénticos a tu mockup (image_1e6c12.png)
 
-            await Task.Delay(1500); 
+            await Task.Delay(1500); // Sostiene el feedback visual 1.5 segundos en pantalla
 
             if (tiempoContrarreloj > 0 && !partidaFinalizada)
             {
                 if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
                 {
-                    await hubConnection.SendAsync("IniciarPartida"); 
+                    // Pedimos de forma limpia la siguiente pregunta al Hub de Render
+                    await hubConnection.SendAsync("IniciarPartida");
                 }
             }
         }
         else
         {
-            string respuestaSeleccionada = tagsActuales[indiceBoton];
+            // ⚔️ MODO MULTIJUGADOR COMPETITIVO ONLINE:
+            // No congelamos localmente ni adivinamos el color para evitar el parpadeo erróneo.
+            // Le enviamos el disparo al servidor y dejamos que 'ResultadoProcesado' pinte la pantalla de forma sincronizada.
             if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
             {
                 await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
