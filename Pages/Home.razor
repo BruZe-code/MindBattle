@@ -291,6 +291,8 @@
 
     private string textoRespuestaCorrectaRonda = "";
 
+    private string idSalaSolitaria = "";
+
     private HubConnection? hubConnection;
     private string estadoConexion = "Desconectado";
     private bool partidaIniciada = false;
@@ -340,18 +342,18 @@
         {
             temaActual = tema;
             preguntaTexto = pregunta;
-        
+
             if (opciones != null && opciones.Count > 0)
             {
                 // Clonamos la lista para no alterar el array original de la red
                 var opcionesMezcladasLocales = new List<string>(opciones);
-        
+
                 if (modoSolitario)
                 {
                     // 🎯 EN SOLITARIO: El backend manda la correcta en opciones[0].
                     // La guardamos antes de mezclar de forma segura.
                     textoRespuestaCorrectaRonda = opciones[0];
-        
+
                     // Mezclamos localmente para que rote por los botones A, B, C y D
                     var rand = new Random();
                     int n = opcionesMezcladasLocales.Count;
@@ -368,22 +370,22 @@
                 {
                     // ⚔️ EN MULTIJUGADOR ONLINE: El servidor ya las manda mezcladas.
                     // No guardamos textoRespuestaCorrectaRonda porque la validación la hace el Hub.
-                    textoRespuestaCorrectaRonda = ""; 
+                    textoRespuestaCorrectaRonda = "";
                 }
-        
+
                 // Asignamos las opciones finales a las variables de la pantalla
                 opcion1 = opcionesMezcladasLocales[0];
                 opcion2 = opcionesMezcladasLocales[1];
                 opcion3 = opcionesMezcladasLocales[2];
                 opcion4 = opcionesMezcladasLocales[3];
             }
-        
+
             tagsActuales = tags;
             turnoActual = turno;
-        
+
             mensajeAlertaRonda = "";
             segundosReloj = 30;
-        
+
             rondaCongelada = false;
             botonPresionadoLocal = -1;
             indiceCorrectoBoton = -1;
@@ -485,7 +487,7 @@
         }
     }
 
-    private void ArrancarModoContrarreloj()
+    private async Task ArrancarModoContrarreloj()
     {
         mostrandoMenuInicial = false;
         modoSolitario = true;
@@ -497,9 +499,15 @@
         botonPresionadoLocal = -1;
         indiceCorrectoBoton = -1;
 
+        // 🎯 Creamos una sala única para ESTA pestaña (Ej: "SOLO_a1b2c3d4...")
+        idSalaSolitaria = $"SOLO_{Guid.NewGuid().ToString()}";
+
         if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
         {
-            _ = hubConnection.SendAsync("IniciarPartida");
+            // NOTA DE ARQUITECTURA: Le avisamos al servidor que nos una a esta sala privada y tire la primera pregunta.
+            // Si tu backend tiene un método específico para unirse a salas como "UnirseASala" o similar, lo llamás acá.
+            // Si tu método "IniciarPartida" acepta parámetros de sala, lo mandamos:
+            await hubConnection.SendAsync("IniciarPartida", idSalaSolitaria);
         }
 
         timerSolitario = new System.Threading.Timer(async (_) =>
@@ -534,7 +542,7 @@
 
             // Armamos el mapa dinámico con las opciones mezcladas locales
             var textosBotones = new List<string> { opcion1, opcion2, opcion3, opcion4 };
-            
+
             // Buscamos matemáticamente en cuál de los 4 casilleros quedó la ganadora
             indiceCorrectoBoton = textosBotones.IndexOf(textoRespuestaCorrectaRonda);
 
@@ -558,7 +566,8 @@
             {
                 if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
                 {
-                    await hubConnection.SendAsync("IniciarPartida");
+                    // 🚀 Pedimos la siguiente pregunta apuntando únicamente a nuestra sala aislada
+                    await hubConnection.SendAsync("IniciarPartida", idSalaSolitaria);
                 }
             }
         }
