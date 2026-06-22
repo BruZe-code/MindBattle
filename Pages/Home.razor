@@ -340,18 +340,19 @@
         {
             temaActual = tema;
             preguntaTexto = pregunta;
-
+        
             if (opciones != null && opciones.Count > 0)
             {
-                // 🎯 Resguardamos el texto de la respuesta correcta original (que siempre viene primero)
-                textoRespuestaCorrectaRonda = opciones[0];
-
-                // Clonamos la lista para poder barajarla de forma local
+                // Clonamos la lista para no alterar el array original de la red
                 var opcionesMezcladasLocales = new List<string>(opciones);
-
-                // 🧠 Si es Solitario, barajamos las cartas en el cliente para que roten por los botones A, B, C y D
+        
                 if (modoSolitario)
                 {
+                    // 🎯 EN SOLITARIO: El backend manda la correcta en opciones[0].
+                    // La guardamos antes de mezclar de forma segura.
+                    textoRespuestaCorrectaRonda = opciones[0];
+        
+                    // Mezclamos localmente para que rote por los botones A, B, C y D
                     var rand = new Random();
                     int n = opcionesMezcladasLocales.Count;
                     while (n > 1)
@@ -363,20 +364,26 @@
                         opcionesMezcladasLocales[n] = value;
                     }
                 }
-
-                // Asignamos las opciones desordenadas a los botones de pantalla
+                else
+                {
+                    // ⚔️ EN MULTIJUGADOR ONLINE: El servidor ya las manda mezcladas.
+                    // No guardamos textoRespuestaCorrectaRonda porque la validación la hace el Hub.
+                    textoRespuestaCorrectaRonda = ""; 
+                }
+        
+                // Asignamos las opciones finales a las variables de la pantalla
                 opcion1 = opcionesMezcladasLocales[0];
                 opcion2 = opcionesMezcladasLocales[1];
                 opcion3 = opcionesMezcladasLocales[2];
                 opcion4 = opcionesMezcladasLocales[3];
             }
-
+        
             tagsActuales = tags;
             turnoActual = turno;
-
+        
             mensajeAlertaRonda = "";
             segundosReloj = 30;
-
+        
             rondaCongelada = false;
             botonPresionadoLocal = -1;
             indiceCorrectoBoton = -1;
