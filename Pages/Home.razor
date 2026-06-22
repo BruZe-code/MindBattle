@@ -290,6 +290,8 @@
     private int indiceCorrectoBoton = -1;
     private string tagGanadorDeLaRonda = ""; // Almacenador para match local
 
+    private string textoRespuestaCorrectaRonda = "";
+
     private HubConnection? hubConnection;
     private string estadoConexion = "Desconectado";
     private bool partidaIniciada = false;
@@ -344,20 +346,19 @@
             temaActual = tema;
             preguntaTexto = pregunta;
 
-            opcion1 = opciones[0];
-            opcion2 = opciones[1];
-            opcion3 = opciones[2];
-            opcion4 = opciones[3];
+            if (opciones != null && opciones.Count > 0)
+            {
+                textoRespuestaCorrectaRonda = opciones[0];
+
+                // Al estar acá adentro, el compilador sabe al 100% que 'opciones' no es nulo
+                opcion1 = opciones[0];
+                opcion2 = opciones[1];
+                opcion3 = opciones[2];
+                opcion4 = opciones[3];
+            }
 
             tagsActuales = tags;
             turnoActual = turno;
-
-            // 🎯 CAPTURA CRUCIAL: El motor de tu servidor deja el tag correcto siempre en el índice 0 original
-            // antes de mandar los tags mezclados. Resguardamos el primer elemento para mapear en solitario.
-            if (tags != null && tags.Count > 0)
-            {
-                tagGanadorDeLaRonda = tags[0];
-            }
 
             mensajeAlertaRonda = "";
             segundosReloj = 30;
@@ -510,48 +511,38 @@
 
         if (modoSolitario)
         {
-            // Congelamos la pantalla de forma local inmediatamente
             botonPresionadoLocal = indiceBoton;
             rondaCongelada = true;
 
-            // 🟢 ASIGNACIÓN COMPLETA PARA SOLITARIO:
-            // Buscamos cuál de los 4 botones contiene exactamente el tag ganador que resguardó el servidor
-            indiceCorrectoBoton = tagsActuales.IndexOf(tagGanadorDeLaRonda);
+            // 🟢 ARMAMOS EL MAPA DE TEXTOS REALES DE TUS BOTONES
+            var textosBotones = new List<string> { opcion1, opcion2, opcion3, opcion4 };
 
-            // Si tu índice seleccionado coincide con el índice donde está alojado el tag ganador: ¡ES UN ACIERTO!
+            // Buscamos matemáticamente en cuál de los 4 botones quedó el texto correcto
+            indiceCorrectoBoton = textosBotones.IndexOf(textoRespuestaCorrectaRonda);
+
+            // Si el botón que tocaste coincide con el índice del texto verdadero: ¡ACIERTO COMPLETO!
             if (indiceBoton == indiceCorrectoBoton)
             {
                 aciertosSolitario++;
-                tiempoContrarreloj += 3; // Recompensa: +3 segundos ⏱️
+                tiempoContrarreloj += 3; // Recompensa ⏱️
                 await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
             }
             else
             {
-                tiempoContrarreloj -= 5; // Penalización: -5 segundos ⏱️
+                tiempoContrarreloj -= 5; // Penalización ⏱️
                 await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
             }
 
-            StateHasChanged(); // Renderiza al instante los bloques sólidos idénticos a tu mockup (image_1e6c12.png)
+            StateHasChanged(); // Pinta instantáneamente los bloques sólidos (image_1e6c12.png)
 
-            await Task.Delay(1500); // Sostiene el feedback visual 1.5 segundos en pantalla
+            await Task.Delay(1500); // Sostiene el feedback visual 1.5 segundos
 
             if (tiempoContrarreloj > 0 && !partidaFinalizada)
             {
                 if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
                 {
-                    // Pedimos de forma limpia la siguiente pregunta al Hub de Render
                     await hubConnection.SendAsync("IniciarPartida");
                 }
-            }
-        }
-        else
-        {
-            // ⚔️ MODO MULTIJUGADOR COMPETITIVO ONLINE:
-            // No congelamos localmente ni adivinamos el color para evitar el parpadeo erróneo.
-            // Le enviamos el disparo al servidor y dejamos que 'ResultadoProcesado' pinte la pantalla de forma sincronizada.
-            if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
-            {
-                await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
             }
         }
     }
