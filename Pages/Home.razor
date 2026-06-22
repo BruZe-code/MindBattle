@@ -387,9 +387,21 @@
             {
                 indiceCorrectoBoton = tagsActuales.IndexOf(tagCorrecto);
             }
-
-            // Reproducción de efectos de sonido según rol multijugador
-            if (jugador == miRolDeJugador)
+            if (modoSolitario)
+            {
+                if (esCorrecta)
+                {
+                    aciertosSolitario++;
+                    tiempoContrarreloj += 3; // Recompensa .wav y +3s
+                    await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
+                }
+                else
+                {
+                    tiempoContrarreloj -= 5; // Penalización .wav y -5s
+                    await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
+                }
+            }
+            else
             {
                 if (esCorrecta)
                     await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
@@ -511,60 +523,45 @@
     }
 
     private async Task ProcesarSeleccionOpcion(int indiceBoton)
+{
+    if (rondaCongelada) return;
+
+    botonPresionadoLocal = indiceBoton;
+    rondaCongelada = true;
+
+    // Tomamos el tag real de la opción que tocó el usuario
+    string respuestaSeleccionada = tagsActuales[indiceBoton];
+    
+    if (modoSolitario)
     {
-        if (rondaCongelada) return;
-
-        botonPresionadoLocal = indiceBoton;
-        rondaCongelada = true;
-
-        // El backend almacena la validación real en la lista de tags correspondientes
-        string respuestaSeleccionada = tagsActuales[indiceBoton];
-
-        // En un motor estructurado por tags, el tag que define la respuesta idéntica se asume correcto
-        // Para acoplarnos al servidor sin romper código, buscamos la validación local
-        // Nota: En Blazor, simulamos la respuesta correcta para pintar el mockup visual inmediato.
-        // Asumimos que la lógica responde en caliente:
-
-        if (modoSolitario)
+        // 1. Le mandamos la respuesta al servidor de Render para que él nos diga si es correcta o no
+        if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
         {
-            // El cliente evalúa temporalmente el índice (Simulación de juego local autónomo)
-            // Se asume el primer tag enviado o un patrón de control. Para hacerlo compatible:
-            // Validamos contra una bandera o dejamos que el delay visual procese.
-            // Para asegurar feedback real, calculamos el acierto (simulación directa para el singleplayer):
-            bool esCorrectoSolitario = (indiceBoton == 0); // Tu motor de Render empuja la correcta al índice 0 tras mezclar, o usa tags.
-
-            // Corrección dinámica de simulación
-            indiceCorrectoBoton = 0; // Asignación estándar del Hub de preguntas estructuradas
-
-            if (indiceBoton == indiceCorrectoBoton)
-            {
-                aciertosSolitario++;
-                tiempoContrarreloj += 3;
-                await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
-            }
-            else
-            {
-                tiempoContrarreloj -= 5;
-                await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
-            }
-
-            StateHasChanged();
-            await Task.Delay(1500); // Sostiene los bloques sólidos en pantalla de forma idéntica al mockup
-
-            if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
-            {
-                await hubConnection!.SendAsync("IniciarPartida");
-            }
+            // El servidor va a procesar esto y va a disparar "ResultadoProcesado" por SignalR
+            await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
         }
-        else
+
+        // 2. Esperamos el segundo y medio reglamentario en pantalla para que el jugador vea los bloques sólidos
+        await Task.Delay(1500);
+
+        // 3. Si el juego sigue en carrera, le pedimos al servidor la siguiente tanda de preguntas
+        if (tiempoContrarreloj > 0 && !partidaFinalizada)
         {
-            // ⚔️ Modo multijugador original de SignalR protegido
             if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
             {
-                await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
+                await hubConnection.SendAsync("IniciarPartida"); 
             }
         }
     }
+    else
+    {
+        // Modo multijugador tradicional 1v1
+        if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
+        {
+            await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
+        }
+    }
+}
 
     private void FinalizarPartidaContrarreloj()
     {
