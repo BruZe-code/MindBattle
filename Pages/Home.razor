@@ -342,43 +342,26 @@
         {
             temaActual = tema;
             preguntaTexto = pregunta;
-
+        
             if (opciones != null && opciones.Count > 0)
             {
-                // Clonamos la lista para no alterar el array original de la red
-                var opcionesMezcladasLocales = new List<string>(opciones);
-
-                if (modoSolitario)
-                {
-                    // 🎯 EN SOLITARIO: El backend manda la correcta en opciones[0].
-                    // La guardamos antes de mezclar de forma segura.
-                    textoRespuestaCorrectaRonda = opciones[0];
-
-                    // Mezclamos localmente para que rote por los botones A, B, C y D
-                    var rand = new Random();
-                    int n = opcionesMezcladasLocales.Count;
-                    while (n > 1)
-                    {
-                        n--;
-                        int k = rand.Next(n + 1);
-                        string value = opcionesMezcladasLocales[k];
-                        opcionesMezcladasLocales[k] = opcionesMezcladasLocales[n];
-                        opcionesMezcladasLocales[n] = value;
-                    }
-                }
-                else
-                {
-                    // ⚔️ EN MULTIJUGADOR ONLINE: El servidor ya las manda mezcladas.
-                    // No guardamos textoRespuestaCorrectaRonda porque la validación la hace el Hub.
-                    textoRespuestaCorrectaRonda = "";
-                }
-
-                // Asignamos las opciones finales a las variables de la pantalla
-                opcion1 = opcionesMezcladasLocales[0];
-                opcion2 = opcionesMezcladasLocales[1];
-                opcion3 = opcionesMezcladasLocales[2];
-                opcion4 = opcionesMezcladasLocales[3];
+                opcion1 = opciones[0];
+                opcion2 = opciones[1];
+                opcion3 = opciones[2];
+                opcion4 = opciones[3];
             }
+        
+            tagsActuales = tags;
+            turnoActual = turno;
+        
+            mensajeAlertaRonda = "";
+            segundosReloj = 30;
+        
+            rondaCongelada = false;
+            botonPresionadoLocal = -1;
+            indiceCorrectoBoton = -1;
+            StateHasChanged();
+        });
 
             tagsActuales = tags;
             turnoActual = turno;
@@ -394,27 +377,44 @@
 
         hubConnection.On<int, bool, int, int, int, string>("ResultadoProcesado", async (jugador, esCorrecta, indiceBoton, nuevosPuntosJ1, nuevosPuntosJ2, tagCorrecto) =>
         {
-            if (modoSolitario) return;
-
             rondaCongelada = true;
             botonPresionadoLocal = indiceBoton;
-
-            puntosJ1 = nuevosPuntosJ1;
-            puntosJ2 = nuevosPuntosJ2;
-
+        
             if (tagCorrecto != null)
             {
                 indiceCorrectoBoton = tagsActuales.IndexOf(tagCorrecto);
             }
-
-            if (jugador == miRolDeJugador)
+        
+            if (modoSolitario)
             {
+                // El servidor dictamina el resultado real de la base de datos de forma infalible
                 if (esCorrecta)
+                {
+                    aciertosSolitario++;
+                    tiempoContrarreloj += 3; // +3s ⏱️
                     await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
+                }
                 else
+                {
+                    tiempoContrarreloj -= 5; // -5s ⏱️
                     await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
+                }
             }
-
+            else
+            {
+                // Marcadores tradicionales online 1v1
+                puntosJ1 = nuevosPuntosJ1;
+                puntosJ2 = nuevosPuntosJ2;
+        
+                if (jugador == miRolDeJugador)
+                {
+                    if (esCorrecta)
+                        await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
+                    else
+                        await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
+                }
+            }
+        
             StateHasChanged();
         });
 
@@ -487,97 +487,59 @@
         }
     }
 
-    private async Task ArrancarModoContrarreloj()
+private async Task ArrancarModoContrarreloj()
+{
+    mostrandoMenuInicial = false;
+    modoSolitario = true;
+    partidaIniciada = true;
+    partidaFinalizada = false;
+    rondaCongelada = false;
+    tiempoContrarreloj = 45;
+    aciertosSolitario = 0;
+    botonPresionadoLocal = -1;
+    indiceCorrectoBoton = -1;
+
+    // Generamos la habitación privada Guid
+    string idSalaSolitaria = $"SOLO_{Guid.NewGuid().ToString()}";
+
+    if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
     {
-        mostrandoMenuInicial = false;
-        modoSolitario = true;
-        partidaIniciada = true;
-        partidaFinalizada = false;
-        rondaCongelada = false;
-        tiempoContrarreloj = 45;
-        aciertosSolitario = 0;
-        botonPresionadoLocal = -1;
-        indiceCorrectoBoton = -1;
-
-        // 🎯 Creamos una sala única para ESTA pestaña (Ej: "SOLO_a1b2c3d4...")
-        idSalaSolitaria = $"SOLO_{Guid.NewGuid().ToString()}";
-
-        if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
-        {
-            // NOTA DE ARQUITECTURA: Le avisamos al servidor que nos una a esta sala privada y tire la primera pregunta.
-            // Si tu backend tiene un método específico para unirse a salas como "UnirseASala" o similar, lo llamás acá.
-            // Si tu método "IniciarPartida" acepta parámetros de sala, lo mandamos:
-            await hubConnection.SendAsync("IniciarPartida", idSalaSolitaria);
-        }
-
-        timerSolitario = new System.Threading.Timer(async (_) =>
-        {
-            tiempoContrarreloj--;
-
-            if (tiempoContrarreloj <= 0)
-            {
-                timerSolitario?.Dispose();
-                await InvokeAsync(FinalizarPartidaContrarreloj);
-            }
-
-            await InvokeAsync(StateHasChanged);
-        }, null, 1000, 1000);
+        // 🚀 Invocamos la firma exacta del nuevo método singleplayer
+        await hubConnection.SendAsync("IniciarPartidaSolitario", idSalaSolitaria);
     }
 
+    timerSolitario = new System.Threading.Timer(async (_) =>
+    {
+        tiempoContrarreloj--;
+
+        if (tiempoContrarreloj <= 0)
+        {
+            timerSolitario?.Dispose();
+            await InvokeAsync(FinalizarPartidaContrarreloj);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }, null, 1000, 1000);
+}
     private void ArrancarModoMultijugador()
     {
         mostrandoMenuInicial = false;
         modoSolitario = false;
     }
 
-    private async Task ProcesarSeleccionOpcion(int indiceBoton)
+      private async Task ProcesarSeleccionOpcion(int indiceBoton)
     {
         if (rondaCongelada) return;
         string respuestaSeleccionada = tagsActuales[indiceBoton];
-
-        if (modoSolitario)
+    
+        botonPresionadoLocal = indiceBoton;
+        rondaCongelada = true;
+        StateHasChanged();
+    
+        if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
         {
-            botonPresionadoLocal = indiceBoton;
-            rondaCongelada = true;
-
-            // Armamos el mapa dinámico con las opciones mezcladas locales
-            var textosBotones = new List<string> { opcion1, opcion2, opcion3, opcion4 };
-
-            // Buscamos matemáticamente en cuál de los 4 casilleros quedó la ganadora
-            indiceCorrectoBoton = textosBotones.IndexOf(textoRespuestaCorrectaRonda);
-
-            if (indiceBoton == indiceCorrectoBoton)
-            {
-                aciertosSolitario++;
-                tiempoContrarreloj += 3; // Recompensa ⏱️
-                await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
-            }
-            else
-            {
-                tiempoContrarreloj -= 5; // Penalización ⏱️
-                await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
-            }
-
-            StateHasChanged();
-
-            await Task.Delay(1500);
-
-            if (tiempoContrarreloj > 0 && !partidaFinalizada)
-            {
-                if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
-                {
-                    // 🚀 Pedimos la siguiente pregunta apuntando únicamente a nuestra sala aislada
-                    await hubConnection.SendAsync("IniciarPartida", idSalaSolitaria);
-                }
-            }
-        }
-        else
-        {
-            // ⚔️ MODO MULTIJUGADOR ONLINE RESTAURADO
-            if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
-            {
-                await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
-            }
+            // Ambos modos usan el validador oficial, garantizando 0 fallas de coincidencia
+            await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
         }
     }
 
