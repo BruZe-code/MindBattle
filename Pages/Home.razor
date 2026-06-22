@@ -176,49 +176,51 @@
                         @preguntaTexto
                     </h2>
 
-                    <!-- Rejilla de Opciones con Diseño Sólido Tipo Mockup -->
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
-                        @for (int i = 0; i < 4; i++)
-                        {
-                            var index = i;
-                            string textoOpcion = index == 0 ? opcion1 : index == 1 ? opcion2 : index == 2 ? opcion3 : opcion4;
+<div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+    @for (int i = 0; i < 4; i++)
+    {
+        var index = i;
+        string textoOpcion = index == 0 ? opcion1 : index == 1 ? opcion2 : index == 2 ? opcion3 : opcion4;
+        
+        // 1. Restauramos tus colores por defecto del manual, cambiando solo el A (#FF6B6B) por Hot Pink (#FF6FB5)
+        string colorBaseBoton = index == 0 ? "#FF6FB5" : index == 1 ? "#4ECDC4" : index == 2 ? "#C77DFF" : "#FFD93D";
+        
+        string estiloBoton = $"background-color: {colorBaseBoton}; color: {(colorBaseBoton == "#FFD93D" ? "#1A103C" : "white")}; font-weight: 700; border: none;";
+        string estiloBadge = $"background-color: {(colorBaseBoton == "#FFD93D" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.25)")}; color: {(colorBaseBoton == "#FFD93D" ? "#1A103C" : "white")};";
+        string iconoFeedback = "";
 
-                            // Estado por Defecto: Línea externa e interna basadas en el Hot Pink (#FF6FB5)
-                            string estiloBoton = "background-color: rgba(255, 111, 181, 0.02); border: 2px solid #FF6FB5; color: #FFFFFF; font-weight: normal;";
-                            string estiloBadge = "background-color: #FF6FB5; color: #12121c;";
-                            string iconoFeedback = "";
+        // 2. Comportamiento dinámico al responder (Feedback sólido del mockup)
+        if (rondaCongelada)
+        {
+            if (index == indiceCorrectoBoton)
+            {
+                // 🟢 ACIERTO: Verde pleno con letras oscuras e ícono ✓
+                estiloBoton = "background-color: #4dfd53; border: none; color: #12121c; font-weight: bold;";
+                estiloBadge = "background-color: rgba(18, 18, 28, 0.15); color: #12121c;";
+                iconoFeedback = " ✓";
+            }
+            else if (index == botonPresionadoLocal && botonPresionadoLocal != indiceCorrectoBoton)
+            {
+                // 🔴 ERROR: Exclusividad del Coral Burst (#FF6B6B) pleno con su cruz ✗
+                estiloBoton = "background-color: #FF6B6B; border: none; color: white; font-weight: bold;";
+                estiloBadge = "background-color: rgba(0, 0, 0, 0.15); color: white;";
+                iconoFeedback = " ✗";
+            }
+        }
 
-                            if (rondaCongelada)
-                            {
-                                if (index == indiceCorrectoBoton)
-                                {
-                                    // Verde Sólido Pleno e Ícono de Tilde para la Correcta (image_1e6c12.png)
-                                    estiloBoton = "background-color: #4dfd53; border: 2px solid #4dfd53; color: #12121c; font-weight: bold;";
-                                    estiloBadge = "background-color: rgba(18, 18, 28, 0.15); color: #12121c;";
-                                    iconoFeedback = " ✓";
-                                }
-                                else if (index == botonPresionadoLocal && botonPresionadoLocal != indiceCorrectoBoton)
-                                {
-                                    // Coral Burst Pleno Opaco con Cruz para el botón incorrecto (image_1e6c12.png)
-                                    estiloBoton = "background-color: #aa4451; border: 2px solid #aa4451; color: #e1b1b7; font-weight: normal;";
-                                    estiloBadge = "background-color: rgba(255, 255, 255, 0.1); color: #e1b1b7;";
-                                    iconoFeedback = " ✗";
-                                }
-                            }
-
-                            <button class="clan-boton-neon"
-                                    style="@estiloBoton padding: 14px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; width: 100%; font-family: 'Nunito', sans-serif; transition: all 0.1s ease; opacity: @(rondaCongelada && index != indiceCorrectoBoton && index != botonPresionadoLocal ? "0.4" : "1");"
-                                    @onclick="() => ProcesarSeleccionOpcion(index)"
-                                    disabled="@botonesBloqueadosEfectivos">
-
-                                <div class="fredoka-text" style="@estiloBadge width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-right: 12px;">
-                                    @(Convert.ToChar(65 + index))
-                                </div>
-
-                                <span style="font-size: 14px; font-weight: 700; text-align: left;">@textoOpcion@iconoFeedback</span>
-                            </button>
-                        }
-                    </div>
+        <button class="clan-boton-neon" 
+                style="@estiloBoton padding: 14px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; width: 100%; font-family: 'Nunito', sans-serif; transition: all 0.1s ease; opacity: @(rondaCongelada && index != indiceCorrectoBoton && index != botonPresionadoLocal ? "0.4" : "1");" 
+                @onclick="() => ProcesarSeleccionOpcion(index)" 
+                disabled="@botonesBloqueadosEfectivos">
+            
+            <div class="fredoka-text" style="@estiloBadge width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-right: 12px;">
+                @(Convert.ToChar(65 + index))
+            </div>
+            
+            <span style="font-size: 14px; text-align: left;">@textoOpcion@iconoFeedback</span>
+        </button>
+    }
+</div>
 
                     @if (miRolDeJugador != turnoActual && !rondaCongelada && !modoSolitario)
                     {
