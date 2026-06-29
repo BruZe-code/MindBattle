@@ -5,8 +5,8 @@
 @implements IAsyncDisposable
 
 <style>
-    @@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap');
-
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap');
+    
     .mb-global-container {
         font-family: 'Nunito', sans-serif;
         background-color: #120C2E;
@@ -31,7 +31,6 @@
 
 <div class="mb-global-container">
 
-    <!-- Cabecera del Juego -->
     <div style="display: inline-flex; align-items: center; gap: 14px; background: #1A103C; border-radius: 20px; padding: 12px 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 5px;">
         <svg width="42" height="42" viewBox="0 0 56 56">
             <circle cx="28" cy="28" r="28" fill="#FFD93D" />
@@ -54,44 +53,46 @@
 
     <p style="color: #4ECDC4; font-size: 13px; font-weight: 700; margin-bottom: 20px;">Red: @estadoConexion</p>
 
-    @if (mostrandoMenuInicial)
+    @if (partidaIniciada && !partidaFinalizada)
     {
-        <!-- ========================================================================= -->
-        <!-- PANTALLA 1: MENÚ INICIAL                                                 -->
-        <!-- ========================================================================= -->
-        <div style="width: 100%; max-width: 450px; background: #1A103C; padding: 35px 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; margin-top: 20px;">
-            <h3 class="fredoka-text" style="color: white; font-size: 20px; margin-bottom: 25px; letter-spacing: 0.5px;">¿CÓMO DESEAS JUGAR HOY?</h3>
+        <div class="fredoka-text" style="background-color: @(miRolDeJugador == 1 ? "#4ECDC4" : "#C77DFF"); color: #1A103C; padding: 4px 16px; border-radius: 20px; font-size: 13px; margin-bottom: 25px; box-shadow: 0 0 10px rgba(255,255,255,0.1);">
+            ESTÁS EN LA PANTALLA DEL: JUGADOR @miRolDeJugador
+        </div>
+    }
 
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <button class="fredoka-text"
-                        style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #1A103C; font-weight: bold; border: none; padding: 18px; font-size: 16px; border-radius: 14px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); transition: transform 0.1s;"
-                        @onclick="ArrancarModoMultijugador" disabled="@(!EstaConectado)">
-                    COMPETITIVO ONLINE ⚔️
-                </button>
-
-                <button class="fredoka-text"
-                        style="background: linear-gradient(135deg, #FF6FB5 0%, #ff5858 100%); color: white; font-weight: bold; border: none; padding: 18px; font-size: 16px; border-radius: 14px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 111, 181, 0.3); transition: transform 0.1s;"
-                        @onclick="ArrancarModoContrarreloj" disabled="@(!EstaConectado)">
-                    CONTRARRELOJ SOLITARIO ⏱️
-                </button>
+    @if (!partidaIniciada)
+    {
+        <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; width: 100%; max-width: 500px; align-items: center; margin-bottom: 25px;">
+            <div style="background: #1A103C; border-radius: 12px; padding: 12px; text-align: center; border: 2px solid @(turnoActual == 1 ? "#4ECDC4" : "#4ECDC422"); box-shadow: @(turnoActual == 1 ? "0 0 15px rgba(78,205,196,0.4)" : "none"); transition: all 0.2s;">
+                <div class="fredoka-text" style="font-size: 14px; color: #4ECDC4;">Jugador 1</div>
+                <div class="fredoka-text" style="font-size: 28px; color: white; margin: 2px 0;">@puntosJ1</div>
+                <div style="font-size: 10px; color: #4ECDC4; font-weight: bold; visibility: @(turnoActual == 1 ? "visible" : "hidden");">▶ TURNO</div>
             </div>
+            <div class="fredoka-text" style="font-size: 20px; color: #FFD93D; text-align: center;">VS</div>
+            <div style="background: #1A103C; border-radius: 12px; padding: 12px; text-align: center; border: 2px solid @(turnoActual == 2 ? "#C77DFF" : "#C77DFF22"); box-shadow: @(turnoActual == 2 ? "0 0 15px rgba(199,125,255,0.4)" : "none"); transition: all 0.2s;">
+                <div class="fredoka-text" style="font-size: 14px; color: #C77DFF;">Jugador 2</div>
+                <div class="fredoka-text" style="font-size: 28px; color: white; margin: 2px 0;">@puntosJ2</div>
+                <div style="font-size: 10px; color: #C77DFF; font-weight: bold; visibility: @(turnoActual == 2 ? "visible" : "hidden");">▶ TURNO</div>
+            </div>
+        </div>
+
+        <div style="width: 100%; max-width: 500px; background-color: #1A103C; padding: 30px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div class="fredoka-text" style="font-size: 18px; color: #4ECDC4; margin-bottom: 10px;">LOBBY MULTIJUGADOR</div>
+            <p style="color: rgba(255,255,255,0.7); font-size: 14px;">Esperando que el Administrador de la partida dé la orden de salida...</p>
+
+            @if (esAdministrador)
+            {
+                <button class="fredoka-text" style="background-color: #6BFF6B; color: #1A103C; font-weight: bold; border: none; padding: 16px 45px; font-size: 18px; border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(107,255,107,0.6); margin-top: 15px; transition: transform 0.1s;"
+                        @onclick="IniciarJuegoEnServidor" disabled="@(!EstaConectado)">
+                    ¡INICIAR PARTIDA DE SALA! 🚀
+                </button>
+            }
         </div>
     }
     else
     {
-        <!-- ========================================================================= -->
-        <!-- MARCADORES SUPERIORES DINÁMICOS                                           -->
-        <!-- ========================================================================= -->
-        @if (partidaIniciada && !partidaFinalizada && !modoSolitario)
+        @if (!partidaFinalizada)
         {
-            <div class="fredoka-text" style="background-color: @(miRolDeJugador == 1 ? "#4ECDC4" : "#C77DFF"); color: #1A103C; padding: 4px 16px; border-radius: 20px; font-size: 13px; margin-bottom: 25px; box-shadow: 0 0 10px rgba(255,255,255,0.1);">
-                ESTÁS EN LA PANTALLA DEL: JUGADOR @miRolDeJugador
-            </div>
-        }
-
-        @if (!modoSolitario)
-        {
-            <!-- HUD Competitivo J1 vs J2 -->
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; width: 100%; max-width: 500px; align-items: center; margin-bottom: 25px;">
                 <div style="background: #1A103C; border-radius: 12px; padding: 12px; text-align: center; border: 2px solid @(turnoActual == 1 ? "#4ECDC4" : "#4ECDC422"); box-shadow: @(turnoActual == 1 ? "0 0 15px rgba(78,205,196,0.4)" : "none"); transition: all 0.2s;">
                     <div class="fredoka-text" style="font-size: 14px; color: #4ECDC4;">Jugador 1</div>
@@ -105,194 +106,121 @@
                     <div style="font-size: 10px; color: #C77DFF; font-weight: bold; visibility: @(turnoActual == 2 ? "visible" : "hidden");">▶ TURNO</div>
                 </div>
             </div>
-        }
-        else if (partidaIniciada && !partidaFinalizada && modoSolitario)
-        {
-            <!-- 🟢 HUD SOLITARIO: Reloj corregido con clase fredoka-text -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; align-items: center; margin-bottom: 25px;">
-                <div style="background: #1A103C; border-radius: 12px; padding: 12px; text-align: center; border: 2px solid #FF6FB5; box-shadow: 0 0 15px rgba(255, 111, 181, 0.3);">
-                    <div class="fredoka-text" style="font-size: 13px; color: #FF6FB5; letter-spacing: 0.05em;">TIEMPO RESTANTE</div>
-                    <div class="fredoka-text" style="font-size: 28px; color: #FF6B6B; font-weight: bold;">⏱ @tiempoContrarreloj s</div>
-                </div>
-                <div style="background: #1A103C; border-radius: 12px; padding: 12px; text-align: center; border: 2px solid #FFD93D; box-shadow: 0 0 15px rgba(255, 217, 61, 0.2);">
-                    <div class="fredoka-text" style="font-size: 13px; color: #FFD93D; letter-spacing: 0.05em;">ACIERTOS</div>
-                    <div class="fredoka-text" style="font-size: 28px; color: white;">@aciertosSolitario</div>
-                </div>
-            </div>
-        }
 
-        <!-- ========================================================================= -->
-        <!-- PANTALLA 2: LOBBY DE ESPERA MULTIJUGADOR                                  -->
-        <!-- ========================================================================= -->
-        @if (!partidaIniciada)
-        {
-            <div style="width: 100%; max-width: 500px; background-color: #1A103C; padding: 30px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <div class="fredoka-text" style="font-size: 18px; color: #4ECDC4; margin-bottom: 10px;">LOBBY MULTIJUGADOR</div>
-                <p style="color: rgba(255,255,255,0.7); font-size: 14px;">Esperando que el Administrador de la partida dé la orden de salida...</p>
+            <div style="width: 100%; max-width: 500px; background-color: #1A103C; padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 
-                @if (esAdministrador)
+                <div style="margin-bottom: 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.5); letter-spacing: 0.05em;">TIEMPO LÍMITE</span>
+                        <span class="fredoka-text" style="font-size: 14px; color: @(segundosReloj <= 5 ? "#FF6B6B" : "#FFD93D");">⏱ @segundosReloj s</span>
+                    </div>
+                    <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div style="height: 100%; width: @((segundosReloj * 100) / 30)%; background-color: @(segundosReloj <= 5 ? "#FF6B6B" : "#FFD93D"); border-radius: 4px; transition: width 1s linear;"></div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(mensajeAlertaRonda))
                 {
-                    <button class="fredoka-text" style="background-color: #6BFF6B; color: #1A103C; font-weight: bold; border: none; padding: 16px 45px; font-size: 18px; border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(107,255,107,0.6); margin-top: 15px; transition: transform 0.1s;"
-                            @onclick="IniciarJuegoEnServidor">
-                        ¡INICIAR PARTIDA DE SALA! 🚀
-                    </button>
+                    <p style="color: #FF6B6B; font-weight: bold; font-size: 14px; margin: 10px 0; text-align: center;">@mensajeAlertaRonda</p>
+                }
+
+                <div style="font-size: 11px; font-weight: 800; color: #4ECDC4; letter-spacing: .06em; margin-bottom: 6px; text-align: left;">
+                    @temaActual
+                </div>
+
+                <h2 style="font-size: 16px; font-weight: 800; color: white; line-height: 1.4; text-align: left; margin-top: 0; margin-bottom: 20px; min-height: 45px;">
+                    @preguntaTexto
+                </h2>
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+                    @for (int i = 0; i < 4; i++)
+                    {
+                        var index = i;
+                        string textoOpcion = index == 0 ? opcion1 : index == 1 ? opcion2 : index == 2 ? opcion3 : opcion4;
+
+                        string colorBaseBoton = index == 0 ? "#FF6FB5" : index == 1 ? "#4ECDC4" : index == 2 ? "#C77DFF" : "#FFD93D";
+                        string estiloBoton = $"background-color: {colorBaseBoton}; color: {(colorBaseBoton == "#FFD93D" ? "#1A103C" : "white")}; font-weight: 700; border: none;";
+                        string estiloBadge = $"background-color: {(colorBaseBoton == "#FFD93D" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.25)")}; color: {(colorBaseBoton == "#FFD93D" ? "#1A103C" : "white")};";
+                        string iconoFeedback = "";
+
+                        if (rondaCongelada)
+                        {
+                            if (index == indiceCorrectoBoton)
+                            {
+                                estiloBoton = "background-color: #4dfd53; border: none; color: #12121c; font-weight: bold;";
+                                estiloBadge = "background-color: rgba(18, 18, 28, 0.15); color: #12121c;";
+                                iconoFeedback = " ✓";
+                            }
+                            else if (index == botonPresionadoLocal && botonPresionadoLocal != indiceCorrectoBoton)
+                            {
+                                estiloBoton = "background-color: #FF6B6B; border: none; color: white; font-weight: bold;";
+                                estiloBadge = "background-color: rgba(0, 0, 0, 0.15); color: white;";
+                                iconoFeedback = " ✗";
+                            }
+                        }
+
+                        <button class="clan-boton-neon"
+                                style="@estiloBoton padding: 14px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; width: 100%; font-family: 'Nunito', sans-serif; transition: all 0.1s ease; opacity: @(rondaCongelada && index != indiceCorrectoBoton && index != botonPresionadoLocal ? "0.4" : "1");"
+                                @onclick="() => ProcesarSeleccionOpcion(index)"
+                                disabled="@botonesBloqueadosEfectivos">
+
+                            <div class="fredoka-text" style="@estiloBadge width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-right: 12px;">
+                                @(Convert.ToChar(65 + index))
+                            </div>
+
+                            <span style="font-size: 14px; text-align: left;">@textoOpcion@iconoFeedback</span>
+                        </button>
+                    }
+                </div>
+
+                @if (miRolDeJugador != turnoActual && !rondaCongelada)
+                {
+                    <p style="color: #FFD93D; font-size: 13px; margin-top: 15px; font-style: italic; text-align: center;">Esperando que tu rival responda...</p>
                 }
             </div>
         }
         else
         {
-            @if (!partidaFinalizada)
-            {
-                <!-- ========================================================================= -->
-                <!-- PANTALLA 3: PANEL DE PREGUNTAS ACTIVO                                     -->
-                <!-- ========================================================================= -->
-                <div style="width: 100%; max-width: 500px; background-color: #1A103C; padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div style="width: 100%; max-width: 480px; margin: 0 auto; background-color: #1A103C; padding: 30px; border-radius: 16px; border: 2px solid #6BFF6B; box-shadow: 0 0 25px rgba(107,255,107,0.2); text-align: center;">
 
-                    @if (!modoSolitario)
-                    {
-                        <div style="margin-bottom: 18px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                <span style="font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.5); letter-spacing: 0.05em;">TIEMPO LÍMITE</span>
-                                <span class="fredoka-text" style="font-size: 14px; color: @(segundosReloj <= 5 ? "#FF6B6B" : "#FFD93D");">⏱ @segundosReloj s</span>
-                            </div>
-                            <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
-                                <div style="height: 100%; width: @((segundosReloj * 100) / 30)%; background-color: @(segundosReloj <= 5 ? "#FF6B6B" : "#FFD93D"); border-radius: 4px; transition: width 1s linear;"></div>
-                            </div>
-                        </div>
-                    }
+                <h2 class="fredoka-text" style="color: #6BFF6B; font-size: 26px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(107,255,107,0.4);">
+                    ¡FIN DE LA BATALLA!
+                </h2>
 
-                    @if (!string.IsNullOrEmpty(mensajeAlertaRonda))
-                    {
-                        <p style="color: #FF6B6B; font-weight: bold; font-size: 14px; margin: 10px 0; text-align: center;">@mensajeAlertaRonda</p>
-                    }
+                <p class="fredoka-text" style="color: #FFD93D; font-size: 16px; margin-bottom: 25px;">@mensajeGanador</p>
 
-                    <div style="font-size: 11px; font-weight: 800; color: #4ECDC4; letter-spacing: .06em; margin-bottom: 6px; text-align: left;">
-                        @temaActual
+                <div style="display: flex; flex-direction: column; gap: 12px; background-color: #120C2E; padding: 18px; border-radius: 10px; border: 1px solid rgba(199,125,255,0.3); text-align: left; margin-bottom: 25px;">
+                    <h4 class="fredoka-text" style="margin: 0 0 5px 0; color: #4ECDC4; text-align: center; letter-spacing: 0.05em; font-size: 14px;">REPORTE TÁCTICO</h4>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span>🎯 Aciertos Jugador 1:</span>
+                        <span style="color: #4ECDC4; font-weight: bold;">@puntosJ1 / 10</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;">
+                        <span>📈 Eficiencia J1:</span>
+                        <span style="color: #4ECDC4;">@eficiencialJ1%</span>
                     </div>
 
-                    <h2 style="font-size: 16px; font-weight: 800; color: white; line-height: 1.4; text-align: left; margin-top: 0; margin-bottom: 20px; min-height: 45px;">
-                        @preguntaTexto
-                    </h2>
-
-                    <!-- Rejilla con colores originales mapeados (A = Hot Pink) -->
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
-                        @for (int i = 0; i < 4; i++)
-                        {
-                            var index = i;
-                            string textoOpcion = index == 0 ? opcion1 : index == 1 ? opcion2 : index == 2 ? opcion3 : opcion4;
-
-                            string colorBaseBoton = index == 0 ? "#FF6FB5" : index == 1 ? "#4ECDC4" : index == 2 ? "#C77DFF" : "#FFD93D";
-                            string estiloBoton = $"background-color: {colorBaseBoton}; color: {(colorBaseBoton == "#FFD93D" ? "#1A103C" : "white")}; font-weight: 700; border: none;";
-                            string estiloBadge = $"background-color: {(colorBaseBoton == "#FFD93D" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.25)")}; color: {(colorBaseBoton == "#FFD93D" ? "#1A103C" : "white")};";
-                            string iconoFeedback = "";
-
-                            if (rondaCongelada)
-                            {
-                                if (index == indiceCorrectoBoton)
-                                {
-                                    estiloBoton = "background-color: #4dfd53; border: none; color: #12121c; font-weight: bold;";
-                                    estiloBadge = "background-color: rgba(18, 18, 28, 0.15); color: #12121c;";
-                                    iconoFeedback = " ✓";
-                                }
-                                else if (index == botonPresionadoLocal && botonPresionadoLocal != indiceCorrectoBoton)
-                                {
-                                    estiloBoton = "background-color: #FF6B6B; border: none; color: white; font-weight: bold;";
-                                    estiloBadge = "background-color: rgba(0, 0, 0, 0.15); color: white;";
-                                    iconoFeedback = " ✗";
-                                }
-                            }
-
-                            <button class="clan-boton-neon"
-                                    style="@estiloBoton padding: 14px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; width: 100%; font-family: 'Nunito', sans-serif; transition: all 0.1s ease; opacity: @(rondaCongelada && index != indiceCorrectoBoton && index != botonPresionadoLocal ? "0.4" : "1");"
-                                    @onclick="() => ProcesarSeleccionOpcion(index)"
-                                    disabled="@botonesBloqueadosEfectivos">
-
-                                <div class="fredoka-text" style="@estiloBadge width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-right: 12px;">
-                                    @(Convert.ToChar(65 + index))
-                                </div>
-
-                                <span style="font-size: 14px; text-align: left;">@textoOpcion@iconoFeedback</span>
-                            </button>
-                        }
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
+                        <span>🎯 Aciertos Jugador 2:</span>
+                        <span style="color: #C77DFF; font-weight: bold;">@puntosJ2 / 10</span>
                     </div>
-
-                    @if (miRolDeJugador != turnoActual && !rondaCongelada && !modoSolitario)
-                    {
-                        <p style="color: #FFD93D; font-size: 13px; margin-top: 15px; font-style: italic; text-align: center;">Esperando que tu rival responda...</p>
-                    }
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span>📈 Eficiencia J2:</span>
+                        <span style="color: #C77DFF;">@eficiencialJ2%</span>
+                    </div>
                 </div>
-            }
-            else
-            {
-                <!-- ========================================================================= -->
-                <!-- PANTALLA 4: RESULTADOS FINALES                                            -->
-                <!-- ========================================================================= -->
-                <div style="width: 100%; max-width: 480px; margin: 0 auto; background-color: #1A103C; padding: 30px; border-radius: 16px; border: 2px solid #6BFF6B; box-shadow: 0 0 25px rgba(107,255,107,0.2); text-align: center;">
 
-                    <h2 class="fredoka-text" style="color: #6BFF6B; font-size: 26px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(107,255,107,0.4);">
-                        ¡FIN DE LA BATALLA!
-                    </h2>
-
-                    <p class="fredoka-text" style="color: #FFD93D; font-size: 16px; margin-bottom: 25px;">@mensajeGanador</p>
-
-                    @if (modoSolitario)
-                    {
-                        <div style="background-color: #120C2E; padding: 22px; border-radius: 12px; border: 1px solid #FF6FB5; margin-bottom: 25px;">
-                            <h4 class="fredoka-text" style="margin: 0 0 8px 0; color: #FF6FB5; font-size: 13px; letter-spacing: 0.05em;">RENDIMIENTO SOLITARIO</h4>
-                            <div style="font-size: 15px; color: white;">Aciertos Totales: <strong style="color: #6BFF6B; font-size: 20px;">@aciertosSolitario</strong></div>
-                            <p style="color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 10px; margin-bottom: 0;">¡Excelente entrenamiento para potenciar tu agilidad mental!</p>
-                        </div>
-                    }
-                    else
-                    {
-                        <div style="display: flex; flex-direction: column; gap: 12px; background-color: #120C2E; padding: 18px; border-radius: 10px; border: 1px solid rgba(199,125,255,0.3); text-align: left; margin-bottom: 25px;">
-                            <h4 class="fredoka-text" style="margin: 0 0 5px 0; color: #4ECDC4; text-align: center; letter-spacing: 0.05em; font-size: 14px;">REPORTE TÁCTICO</h4>
-
-                            <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                                <span>🎯 Aciertos Jugador 1:</span>
-                                <span style="color: #4ECDC4; font-weight: bold;">@puntosJ1 / 10</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;">
-                                <span>📈 Eficiencia J1:</span>
-                                <span style="color: #4ECDC4;">@eficiencialJ1%</span>
-                            </div>
-
-                            <div style="display: flex; justify-content: space-between; font-size: 14px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
-                                <span>🎯 Aciertos Jugador 2:</span>
-                                <span style="color: #C77DFF; font-weight: bold;">@puntosJ2 / 10</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                                <span>📈 Eficiencia J2:</span>
-                                <span style="color: #C77DFF;">@eficiencialJ2%</span>
-                            </div>
-                        </div>
-                    }
-
-                    <button class="fredoka-text" style="background-color: #FFD93D; color: #1A103C; font-weight: bold; border: none; padding: 14px 35px; font-size: 16px; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,217,61,0.3);"
-                            @onclick="RegresarAlMenuInicial">
-                        VOLVER AL MENÚ
-                    </button>
-                </div>
-            }
+                <button class="fredoka-text" style="background-color: #FFD93D; color: #1A103C; font-weight: bold; border: none; padding: 14px 35px; font-size: 16px; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,217,61,0.3);"
+                        @onclick="RegresarAlLobby">
+                    VOLVER AL LOBBY
+                </button>
+            </div>
         }
     }
 </div>
 
 @code {
-    private bool mostrandoMenuInicial = true;
-    private bool modoSolitario = false;
-
-    private int tiempoContrarreloj = 45;
-    private int aciertosSolitario = 0;
-    private System.Threading.Timer? timerSolitario;
-
-    private int botonPresionadoLocal = -1;
-    private int indiceCorrectoBoton = -1;
-
-    private string textoRespuestaCorrectaRonda = "";
-
-    private string idSalaSolitaria = "";
-
     private HubConnection? hubConnection;
     private string estadoConexion = "Desconectado";
     private bool partidaIniciada = false;
@@ -304,12 +232,18 @@
     private string mensajeGanador = "";
     private int eficiencialJ1 = 0;
     private int eficiencialJ2 = 0;
+
+    private int botonPresionadoLocal = -1;
+    private int indiceCorrectoBoton = -1;
+
     private bool esAdministrador => miRolDeJugador == 1;
-    private bool botonesBloqueadosEfectivos => rondaCongelada || (!modoSolitario && (miRolDeJugador != turnoActual));
+    private bool botonesBloqueadosEfectivos => rondaCongelada || (miRolDeJugador != turnoActual);
+
     private string temaActual = "TEMA";
     private string preguntaTexto = "";
     private string opcion1 = "", opcion2 = "", opcion3 = "", opcion4 = "";
     private List<string> tagsActuales = new List<string>();
+
     private int puntosJ1 = 0;
     private int puntosJ2 = 0;
     private int turnoActual = 1;
@@ -342,7 +276,7 @@
         {
             temaActual = tema;
             preguntaTexto = pregunta;
-        
+
             if (opciones != null && opciones.Count > 0)
             {
                 opcion1 = opciones[0];
@@ -350,18 +284,6 @@
                 opcion3 = opciones[2];
                 opcion4 = opciones[3];
             }
-        
-            tagsActuales = tags;
-            turnoActual = turno;
-        
-            mensajeAlertaRonda = "";
-            segundosReloj = 30;
-        
-            rondaCongelada = false;
-            botonPresionadoLocal = -1;
-            indiceCorrectoBoton = -1;
-            StateHasChanged();
-        });
 
             tagsActuales = tags;
             turnoActual = turno;
@@ -379,49 +301,28 @@
         {
             rondaCongelada = true;
             botonPresionadoLocal = indiceBoton;
-        
+
+            puntosJ1 = nuevosPuntosJ1;
+            puntosJ2 = nuevosPuntosJ2;
+
             if (tagCorrecto != null)
             {
                 indiceCorrectoBoton = tagsActuales.IndexOf(tagCorrecto);
             }
-        
-            if (modoSolitario)
+
+            if (jugador == miRolDeJugador)
             {
-                // El servidor dictamina el resultado real de la base de datos de forma infalible
                 if (esCorrecta)
-                {
-                    aciertosSolitario++;
-                    tiempoContrarreloj += 3; // +3s ⏱️
                     await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
-                }
                 else
-                {
-                    tiempoContrarreloj -= 5; // -5s ⏱️
                     await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
-                }
             }
-            else
-            {
-                // Marcadores tradicionales online 1v1
-                puntosJ1 = nuevosPuntosJ1;
-                puntosJ2 = nuevosPuntosJ2;
-        
-                if (jugador == miRolDeJugador)
-                {
-                    if (esCorrecta)
-                        await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
-                    else
-                        await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
-                }
-            }
-        
+
             StateHasChanged();
         });
 
         hubConnection.On<int>("ActualizarTemporizador", async (tiempo) =>
         {
-            if (modoSolitario) return;
-
             await InvokeAsync(() =>
             {
                 segundosReloj = tiempo;
@@ -431,8 +332,6 @@
 
         hubConnection.On<int>("TiempoAgotadoNotificacion", async (jugadorMalo) =>
         {
-            if (modoSolitario) return;
-
             await InvokeAsync(async () =>
             {
                 rondaCongelada = true;
@@ -448,8 +347,6 @@
 
         hubConnection.On<int, int, int, int>("PartidaFinalizada", async (aciertosJ1, totalJ1, aciertosJ2, totalJ2) =>
         {
-            if (modoSolitario) return;
-
             await InvokeAsync(() =>
             {
                 partidaFinalizada = true;
@@ -487,78 +384,22 @@
         }
     }
 
-private async Task ArrancarModoContrarreloj()
-{
-    mostrandoMenuInicial = false;
-    modoSolitario = true;
-    partidaIniciada = true;
-    partidaFinalizada = false;
-    rondaCongelada = false;
-    tiempoContrarreloj = 45;
-    aciertosSolitario = 0;
-    botonPresionadoLocal = -1;
-    indiceCorrectoBoton = -1;
-
-    // Generamos la habitación privada Guid
-    string idSalaSolitaria = $"SOLO_{Guid.NewGuid().ToString()}";
-
-    if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
-    {
-        // 🚀 Invocamos la firma exacta del nuevo método singleplayer
-        await hubConnection.SendAsync("IniciarPartidaSolitario", idSalaSolitaria);
-    }
-
-    timerSolitario = new System.Threading.Timer(async (_) =>
-    {
-        tiempoContrarreloj--;
-
-        if (tiempoContrarreloj <= 0)
-        {
-            timerSolitario?.Dispose();
-            await InvokeAsync(FinalizarPartidaContrarreloj);
-        }
-
-        await InvokeAsync(StateHasChanged);
-    }, null, 1000, 1000);
-}
-    private void ArrancarModoMultijugador()
-    {
-        mostrandoMenuInicial = false;
-        modoSolitario = false;
-    }
-
-      private async Task ProcesarSeleccionOpcion(int indiceBoton)
+    private async Task ProcesarSeleccionOpcion(int indiceBoton)
     {
         if (rondaCongelada) return;
         string respuestaSeleccionada = tagsActuales[indiceBoton];
-    
-        botonPresionadoLocal = indiceBoton;
-        rondaCongelada = true;
-        StateHasChanged();
-    
+
         if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
         {
-            // Ambos modos usan el validador oficial, garantizando 0 fallas de coincidencia
             await hubConnection.SendAsync("ValidarRespuesta", indiceBoton, respuestaSeleccionada);
         }
     }
 
-    private void FinalizarPartidaContrarreloj()
+    private void RegresarAlLobby()
     {
-        partidaFinalizada = true;
-        rondaCongelada = true;
-        mensajeGanador = $"¡TIEMPO AGOTADO! ⏱️ LOGRASTE {aciertosSolitario} ACIERTOS.";
-        StateHasChanged();
-    }
-
-    private void RegresarAlMenuInicial()
-    {
-        timerSolitario?.Dispose();
-        mostrandoMenuInicial = true;
         partidaIniciada = false;
         partidaFinalizada = false;
         rondaCongelada = false;
-        modoSolitario = false;
         StateHasChanged();
     }
 
@@ -574,7 +415,6 @@ private async Task ArrancarModoContrarreloj()
 
     public async ValueTask DisposeAsync()
     {
-        timerSolitario?.Dispose();
         if (hubConnection is not null)
         {
             await hubConnection.DisposeAsync();
