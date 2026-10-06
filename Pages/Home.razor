@@ -101,6 +101,13 @@
                 <!-- SUBMENÚ MULTIJUGADOR: Salas privadas, matchmaking o código -->
                 <h3 class="fredoka-text" style="color: #4ECDC4; font-size: 18px; margin-bottom: 20px; letter-spacing: 0.5px;">MODO COMPETITIVO ONLINE</h3>
 
+                @if (conectandoSala)
+                {
+                    <div style="background: rgba(78, 205, 196, 0.15); border: 1px solid #4ECDC4; border-radius: 10px; padding: 12px; margin-bottom: 15px; font-size: 14px; color: #4ECDC4; font-weight: bold;">
+                        ⏳ Conectando con la sala... por favor espera.
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(errorUnirseSala))
                 {
                     <div style="background: rgba(255, 107, 107, 0.2); border: 1px solid #FF6B6B; border-radius: 10px; padding: 10px; margin-bottom: 15px; font-size: 13px; color: #FF6B6B;">
@@ -111,13 +118,13 @@
                 <div style="display: flex; flex-direction: column; gap: 14px;">
                     <button class="fredoka-text"
                             style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #1A103C; font-weight: bold; border: none; padding: 15px; font-size: 15px; border-radius: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);"
-                            @onclick="() => ArrancarModoMultijugador(codigo: null, esPrivada: false)">
+                            @onclick="() => ArrancarModoMultijugador(codigo: null, esPrivada: false)" disabled="@conectandoSala">
                         ⚡ PARTIDA RÁPIDA (PÚBLICA)
                     </button>
 
                     <button class="fredoka-text"
                             style="background: linear-gradient(135deg, #C77DFF 0%, #7b2cbf 100%); color: white; font-weight: bold; border: none; padding: 15px; font-size: 15px; border-radius: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(199, 125, 255, 0.25);"
-                            @onclick="() => ArrancarModoMultijugador(codigo: null, esPrivada: true)">
+                            @onclick="() => ArrancarModoMultijugador(codigo: null, esPrivada: true)" disabled="@conectandoSala">
                         🔒 CREAR SALA PRIVADA
                     </button>
 
@@ -125,11 +132,11 @@
                     <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px;">
                         <span class="fredoka-text" style="font-size: 13px; color: #FFD93D; display: block; margin-bottom: 8px;">O ÚNETE CON UN CÓDIGO DE SALA:</span>
                         <div style="display: flex; gap: 8px;">
-                            <input type="text" maxlength="4" placeholder="Ej: 3219" @bind="codigoIngresado"
+                            <input type="text" maxlength="4" placeholder="Ej: 3219" @bind="codigoIngresado" disabled="@conectandoSala"
                                    style="width: 100%; background: #120C2E; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; padding: 10px; font-size: 16px; text-align: center; font-weight: bold; font-family: 'Fredoka One', sans-serif;" />
                             <button class="fredoka-text"
                                     style="background: #FFD93D; color: #1A103C; font-weight: bold; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; flex-shrink: 0;"
-                                    @onclick="UnirseConCodigo" disabled="@string.IsNullOrWhiteSpace(codigoIngresado)">
+                                    @onclick="UnirseConCodigo" disabled="@(conectandoSala || string.IsNullOrWhiteSpace(codigoIngresado))">
                                 ENTRAR
                             </button>
                         </div>
@@ -137,7 +144,7 @@
 
                     <button class="fredoka-text"
                             style="background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); padding: 10px; font-size: 13px; border-radius: 8px; cursor: pointer; margin-top: 5px;"
-                            @onclick='() => { mostrandoModalMultijugador = false; errorUnirseSala = ""; }'>
+                            @onclick='() => { mostrandoModalMultijugador = false; errorUnirseSala = ""; conectandoSala = false; }' disabled="@conectandoSala">
                         ← Volver
                     </button>
                 </div>
@@ -413,6 +420,7 @@
     private bool mostrandoModalMultijugador = false;
     private string codigoIngresado = "";
     private string errorUnirseSala = "";
+    private bool conectandoSala = false;
 
     // Control de audio
     private bool sonidoHabilitado = true;
@@ -499,6 +507,11 @@
             jugadoresEnSala = conectados;
             mensajeLobby = mensaje;
             errorUnirseSala = "";
+            conectandoSala = false;
+            mostrandoMenuInicial = false;
+            mostrandoModalMultijugador = false;
+            partidaIniciada = false;
+            partidaFinalizada = false;
             InvokeAsync(StateHasChanged);
         });
 
@@ -507,6 +520,7 @@
             InvokeAsync(() =>
             {
                 errorUnirseSala = error;
+                conectandoSala = false;
                 mostrandoModalMultijugador = true;
                 mostrandoMenuInicial = true;
                 partidaIniciada = false;
@@ -724,19 +738,28 @@
 
     private async Task ArrancarModoMultijugador(string? codigo = null, bool esPrivada = false)
     {
-        mostrandoMenuInicial = false;
-        mostrandoModalMultijugador = false;
-        modoSolitario = false;
-        partidaIniciada = false;
-        partidaFinalizada = false;
-        codigoSalaActual = "";
-        jugadoresEnSala = 1;
-        mensajeLobby = "Buscando o creando sala...";
         errorUnirseSala = "";
+        conectandoSala = true;
+        StateHasChanged();
 
         if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
         {
-            await hubConnection.SendAsync("UnirseAMultijugador", codigo, esPrivada);
+            try
+            {
+                await hubConnection.SendAsync("UnirseAMultijugador", codigo, esPrivada);
+            }
+            catch (Exception ex)
+            {
+                conectandoSala = false;
+                errorUnirseSala = $"Error de red al unirse a la sala: {ex.Message}";
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            conectandoSala = false;
+            errorUnirseSala = "El juego aún se está conectando al servidor. Por favor espera a que la red esté ONLINE.";
+            StateHasChanged();
         }
     }
 
@@ -858,6 +881,8 @@
 
         mostrandoMenuInicial = true;
         mostrandoModalMultijugador = false;
+        conectandoSala = false;
+        errorUnirseSala = "";
         partidaIniciada = false;
         partidaFinalizada = false;
         rondaCongelada = false;
