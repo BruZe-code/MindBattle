@@ -27,6 +27,16 @@
         box-shadow: 0 0 20px rgba(255, 111, 181, 0.4) !important;
         transform: translateY(-2px);
     }
+
+    @@keyframes pulsoFuego {
+        0% { box-shadow: 0 0 10px rgba(255, 107, 107, 0.5); }
+        50% { box-shadow: 0 0 25px rgba(255, 217, 61, 0.8); }
+        100% { box-shadow: 0 0 10px rgba(255, 107, 107, 0.5); }
+    }
+
+    .badge-muerte-subita {
+        animation: pulsoFuego 1.5s infinite;
+    }
 </style>
 
 <div class="mb-global-container">
@@ -52,29 +62,86 @@
         </div>
     </div>
 
-    <p style="color: #4ECDC4; font-size: 13px; font-weight: 700; margin-bottom: 20px;">Red: @estadoConexion</p>
+    <!-- Barra de Estado de Red y Control de Audio -->
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+        <p style="color: #4ECDC4; font-size: 13px; font-weight: 700; margin: 0;">Red: @estadoConexion</p>
+        <button class="clan-boton-neon" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 4px 10px; font-size: 13px; cursor: pointer; color: white; display: flex; align-items: center; gap: 5px;"
+                @onclick="AlternarSonido" title="Alternar sonido">
+            @(sonidoHabilitado ? "🔊 Audio ON" : "🔇 Audio Muted")
+        </button>
+    </div>
 
     @if (mostrandoMenuInicial)
     {
         <!-- ========================================================================= -->
         <!-- PANTALLA 1: MENÚ INICIAL                                                 -->
         <!-- ========================================================================= -->
-        <div style="width: 100%; max-width: 450px; background: #1A103C; padding: 35px 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; margin-top: 20px;">
-            <h3 class="fredoka-text" style="color: white; font-size: 20px; margin-bottom: 25px; letter-spacing: 0.5px;">¿CÓMO DESEAS JUGAR HOY?</h3>
+        <div style="width: 100%; max-width: 450px; background: #1A103C; padding: 35px 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; margin-top: 10px;">
 
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <button class="fredoka-text"
-                        style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #1A103C; font-weight: bold; border: none; padding: 18px; font-size: 16px; border-radius: 14px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); transition: transform 0.1s;"
-                        @onclick="ArrancarModoMultijugador" disabled="@(!EstaConectado)">
-                    COMPETITIVO ONLINE ⚔️
-                </button>
+            @if (!mostrandoModalMultijugador)
+            {
+                <h3 class="fredoka-text" style="color: white; font-size: 20px; margin-bottom: 25px; letter-spacing: 0.5px;">¿CÓMO DESEAS JUGAR HOY?</h3>
 
-                <button class="fredoka-text"
-                        style="background: linear-gradient(135deg, #FF6FB5 0%, #ff5858 100%); color: white; font-weight: bold; border: none; padding: 18px; font-size: 16px; border-radius: 14px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 111, 181, 0.3); transition: transform 0.1s;"
-                        @onclick="ArrancarModoContrarreloj" disabled="@(!EstaConectado)">
-                    CONTRARRELOJ SOLITARIO ⏱️
-                </button>
-            </div>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <button class="fredoka-text"
+                            style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #1A103C; font-weight: bold; border: none; padding: 18px; font-size: 16px; border-radius: 14px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); transition: transform 0.1s;"
+                            @onclick="() => mostrandoModalMultijugador = true" disabled="@(!EstaConectado)">
+                        COMPETITIVO ONLINE ⚔️
+                    </button>
+
+                    <button class="fredoka-text"
+                            style="background: linear-gradient(135deg, #FF6FB5 0%, #ff5858 100%); color: white; font-weight: bold; border: none; padding: 18px; font-size: 16px; border-radius: 14px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 111, 181, 0.3); transition: transform 0.1s;"
+                            @onclick="ArrancarModoContrarreloj" disabled="@(!EstaConectado)">
+                        CONTRARRELOJ SOLITARIO ⏱️
+                    </button>
+                </div>
+            }
+            else
+            {
+                <!-- SUBMENÚ MULTIJUGADOR: Salas privadas, matchmaking o código -->
+                <h3 class="fredoka-text" style="color: #4ECDC4; font-size: 18px; margin-bottom: 20px; letter-spacing: 0.5px;">MODO COMPETITIVO ONLINE</h3>
+
+                @if (!string.IsNullOrEmpty(errorUnirseSala))
+                {
+                    <div style="background: rgba(255, 107, 107, 0.2); border: 1px solid #FF6B6B; border-radius: 10px; padding: 10px; margin-bottom: 15px; font-size: 13px; color: #FF6B6B;">
+                        @errorUnirseSala
+                    </div>
+                }
+
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <button class="fredoka-text"
+                            style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #1A103C; font-weight: bold; border: none; padding: 15px; font-size: 15px; border-radius: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);"
+                            @onclick="() => ArrancarModoMultijugador(codigo: null, esPrivada: false)">
+                        ⚡ PARTIDA RÁPIDA (PÚBLICA)
+                    </button>
+
+                    <button class="fredoka-text"
+                            style="background: linear-gradient(135deg, #C77DFF 0%, #7b2cbf 100%); color: white; font-weight: bold; border: none; padding: 15px; font-size: 15px; border-radius: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(199, 125, 255, 0.25);"
+                            @onclick="() => ArrancarModoMultijugador(codigo: null, esPrivada: true)">
+                        🔒 CREAR SALA PRIVADA
+                    </button>
+
+                    <!-- Unirse con Código -->
+                    <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px;">
+                        <span class="fredoka-text" style="font-size: 13px; color: #FFD93D; display: block; margin-bottom: 8px;">O ÚNETE CON UN CÓDIGO DE SALA:</span>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" maxlength="4" placeholder="Ej: 3219" @bind="codigoIngresado"
+                                   style="width: 100%; background: #120C2E; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; padding: 10px; font-size: 16px; text-align: center; font-weight: bold; font-family: 'Fredoka One', sans-serif;" />
+                            <button class="fredoka-text"
+                                    style="background: #FFD93D; color: #1A103C; font-weight: bold; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; flex-shrink: 0;"
+                                    @onclick="UnirseConCodigo" disabled="@string.IsNullOrWhiteSpace(codigoIngresado)">
+                                ENTRAR
+                            </button>
+                        </div>
+                    </div>
+
+                    <button class="fredoka-text"
+                            style="background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); padding: 10px; font-size: 13px; border-radius: 8px; cursor: pointer; margin-top: 5px;"
+                            @onclick='() => { mostrandoModalMultijugador = false; errorUnirseSala = ""; }'>
+                        ← Volver
+                    </button>
+                </div>
+            }
         </div>
     }
     else
@@ -84,9 +151,16 @@
         <!-- ========================================================================= -->
         @if (partidaIniciada && !partidaFinalizada && !modoSolitario)
         {
-            <div class="fredoka-text" style="background-color: @(miRolDeJugador == 1 ? "#4ECDC4" : "#C77DFF"); color: #1A103C; padding: 4px 16px; border-radius: 20px; font-size: 13px; margin-bottom: 25px; box-shadow: 0 0 10px rgba(255,255,255,0.1);">
+            <div class="fredoka-text" style="background-color: @(miRolDeJugador == 1 ? "#4ECDC4" : "#C77DFF"); color: #1A103C; padding: 4px 16px; border-radius: 20px; font-size: 13px; margin-bottom: 15px; box-shadow: 0 0 10px rgba(255,255,255,0.1);">
                 ESTÁS EN LA PANTALLA DEL: JUGADOR @miRolDeJugador
             </div>
+
+            @if (esMuerteSubita)
+            {
+                <div class="fredoka-text badge-muerte-subita" style="background: linear-gradient(90deg, #FF6B6B 0%, #FFD93D 100%); color: #1A103C; font-weight: bold; padding: 8px 20px; border-radius: 20px; font-size: 14px; margin-bottom: 20px; text-align: center; letter-spacing: 0.5px;">
+                    🔥 ¡MUERTE SÚBITA ACTIVADA! EL PRIMERO EN SACAR VENTAJA GANA 🔥
+                </div>
+            }
         }
 
         @if (!modoSolitario && partidaIniciada)
@@ -131,8 +205,8 @@
 
                 @if (!string.IsNullOrEmpty(codigoSalaActual))
                 {
-                    <div style="display: inline-block; background: rgba(78, 205, 196, 0.15); border: 1px solid #4ECDC4; border-radius: 8px; padding: 4px 14px; margin-bottom: 16px;">
-                        <span class="fredoka-text" style="color: #4ECDC4; font-size: 14px; letter-spacing: 1px;">SALA #@codigoSalaActual</span>
+                    <div style="display: inline-block; background: rgba(78, 205, 196, 0.15); border: 1px solid #4ECDC4; border-radius: 8px; padding: 6px 16px; margin-bottom: 16px;">
+                        <span class="fredoka-text" style="color: #4ECDC4; font-size: 15px; letter-spacing: 1px;">CÓDIGO DE SALA: #@codigoSalaActual</span>
                     </div>
                 }
 
@@ -162,7 +236,7 @@
                 else
                 {
                     <div class="fredoka-text" style="color: rgba(255,255,255,0.6); font-size: 14px; font-style: italic; padding: 10px;">
-                        Buscando oponente para iniciar la batalla... 📡
+                        Comparte el código con un amigo o aguarda a otro jugador... 📡
                     </div>
                 }
 
@@ -198,7 +272,7 @@
 
                     @if (!string.IsNullOrEmpty(mensajeAlertaRonda))
                     {
-                        <p style="color: #FF6B6B; font-weight: bold; font-size: 14px; margin: 10px 0; text-align: center;">@mensajeAlertaRonda</p>
+                        <p style="color: #FFD93D; font-weight: bold; font-size: 14px; margin: 10px 0; text-align: center;">@mensajeAlertaRonda</p>
                     }
 
                     <div style="font-size: 11px; font-weight: 800; color: #4ECDC4; letter-spacing: .06em; margin-bottom: 6px; text-align: left;">
@@ -209,7 +283,7 @@
                         @preguntaTexto
                     </h2>
 
-                    <!-- Rejilla con colores temáticos -->
+                    <!-- Rejilla con opciones -->
                     <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
                         @for (int i = 0; i < 4; i++)
                         {
@@ -285,7 +359,7 @@
 
                             <div style="display: flex; justify-content: space-between; font-size: 14px;">
                                 <span>🎯 Aciertos Jugador 1:</span>
-                                <span style="color: #4ECDC4; font-weight: bold;">@puntosJ1 / 10</span>
+                                <span style="color: #4ECDC4; font-weight: bold;">@puntosJ1</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;">
                                 <span>📈 Eficiencia J1:</span>
@@ -294,7 +368,7 @@
 
                             <div style="display: flex; justify-content: space-between; font-size: 14px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
                                 <span>🎯 Aciertos Jugador 2:</span>
-                                <span style="color: #C77DFF; font-weight: bold;">@puntosJ2 / 10</span>
+                                <span style="color: #C77DFF; font-weight: bold;">@puntosJ2</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: 14px;">
                                 <span>📈 Eficiencia J2:</span>
@@ -303,10 +377,30 @@
                         </div>
                     }
 
-                    <button class="fredoka-text" style="background-color: #FFD93D; color: #1A103C; font-weight: bold; border: none; padding: 14px 35px; font-size: 16px; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,217,61,0.3);"
-                            @onclick="RegresarAlMenuInicial">
-                        VOLVER AL MENÚ
-                    </button>
+                    <!-- Botones de Acción: Revancha y Volver al Menú -->
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        @if (!modoSolitario)
+                        {
+                            @if (!yoSoliciteRevancha)
+                            {
+                                <button class="fredoka-text clan-boton-neon" style="background-color: #6BFF6B; color: #1A103C; font-weight: bold; border: none; padding: 14px 28px; font-size: 15px; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(107,255,107,0.4);"
+                                        @onclick="PedirRevancha">
+                                    @(rivalSolicitoRevancha ? "⚔️ ¡ACEPTAR REVANCHA!" : "🔄 SOLICITAR REVANCHA")
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="fredoka-text" style="color: #6BFF6B; font-size: 13px; padding: 12px 18px; background: rgba(107,255,107,0.1); border-radius: 10px; border: 1px solid #6BFF6B; display: flex; align-items: center;">
+                                    ⏳ Esperando que tu rival acepte la revancha...
+                                </div>
+                            }
+                        }
+
+                        <button class="fredoka-text" style="background-color: #FFD93D; color: #1A103C; font-weight: bold; border: none; padding: 14px 28px; font-size: 15px; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,217,61,0.3);"
+                                @onclick="RegresarAlMenuInicial">
+                            VOLVER AL MENÚ
+                        </button>
+                    </div>
                 </div>
             }
         }
@@ -316,7 +410,14 @@
 @code {
     private bool mostrandoMenuInicial = true;
     private bool modoSolitario = false;
+    private bool mostrandoModalMultijugador = false;
+    private string codigoIngresado = "";
+    private string errorUnirseSala = "";
 
+    // Control de audio
+    private bool sonidoHabilitado = true;
+
+    // Modos de juego
     private int tiempoContrarreloj = 45;
     private int aciertosSolitario = 0;
     private System.Threading.Timer? timerSolitario;
@@ -326,6 +427,7 @@
 
     private string tagCorrectoSolitario = "";
 
+    // SignalR y partida
     private HubConnection? hubConnection;
     private string estadoConexion = "Desconectado";
     private bool partidaIniciada = false;
@@ -351,6 +453,11 @@
     private string codigoSalaActual = "";
     private int jugadoresEnSala = 0;
     private string mensajeLobby = "Conectando al servidor...";
+
+    // Muerte Súbita y Revancha
+    private bool esMuerteSubita = false;
+    private bool yoSoliciteRevancha = false;
+    private bool rivalSolicitoRevancha = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -391,7 +498,20 @@
             codigoSalaActual = idSala;
             jugadoresEnSala = conectados;
             mensajeLobby = mensaje;
+            errorUnirseSala = "";
             InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<string>("ErrorUnirseSala", (error) =>
+        {
+            InvokeAsync(() =>
+            {
+                errorUnirseSala = error;
+                mostrandoModalMultijugador = true;
+                mostrandoMenuInicial = true;
+                partidaIniciada = false;
+                StateHasChanged();
+            });
         });
 
         hubConnection.On<string>("OponenteDesconectado", (mensaje) =>
@@ -406,6 +526,28 @@
             });
         });
 
+        hubConnection.On<string>("MuerteSubitaIniciada", (mensaje) =>
+        {
+            InvokeAsync(() =>
+            {
+                esMuerteSubita = true;
+                mensajeAlertaRonda = mensaje;
+                StateHasChanged();
+            });
+        });
+
+        hubConnection.On<int>("RevanchaPropuesta", (rolQuePidio) =>
+        {
+            InvokeAsync(() =>
+            {
+                if (rolQuePidio != miRolDeJugador)
+                {
+                    rivalSolicitoRevancha = true;
+                }
+                StateHasChanged();
+            });
+        });
+
         hubConnection.On("PartidaReiniciada", () =>
         {
             puntosJ1 = 0;
@@ -413,6 +555,9 @@
             partidaIniciada = true;
             partidaFinalizada = false;
             rondaCongelada = false;
+            esMuerteSubita = false;
+            yoSoliciteRevancha = false;
+            rivalSolicitoRevancha = false;
             botonPresionadoLocal = -1;
             indiceCorrectoBoton = -1;
             mensajeAlertaRonda = "";
@@ -485,9 +630,9 @@
             if (jugador == miRolDeJugador)
             {
                 if (esCorrecta)
-                    await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
+                    await ReproducirSonido("acierto.wav");
                 else
-                    await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
+                    await ReproducirSonido("error.wav");
             }
 
             StateHasChanged();
@@ -515,7 +660,7 @@
 
                 if (jugadorMalo == miRolDeJugador)
                 {
-                    await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
+                    await ReproducirSonido("error.wav");
                 }
                 StateHasChanged();
             });
@@ -539,11 +684,11 @@
                 }
                 else if (aciertosJ1 > aciertosJ2)
                 {
-                    mensajeGanador = "👑 ¡EL JUGADOR 1 REINA EN MIND_BATTLE! 👑";
+                    mensajeGanador = esMuerteSubita ? "🔥 ¡EL JUGADOR 1 REINA EN MUERTE SÚBITA! 🔥" : "👑 ¡EL JUGADOR 1 REINA EN MIND_BATTLE! 👑";
                 }
                 else
                 {
-                    mensajeGanador = "👑 ¡EL JUGADOR 2 REINA EN MIND_BATTLE! 👑";
+                    mensajeGanador = esMuerteSubita ? "🔥 ¡EL JUGADOR 2 REINA EN MUERTE SÚBITA! 🔥" : "👑 ¡EL JUGADOR 2 REINA EN MIND_BATTLE! 👑";
                 }
 
                 StateHasChanged();
@@ -562,25 +707,58 @@
         }
     }
 
-    private async Task ArrancarModoMultijugador()
+    private void AlternarSonido()
+    {
+        sonidoHabilitado = !sonidoHabilitado;
+    }
+
+    private async Task ReproducirSonido(string archivo)
+    {
+        if (!sonidoHabilitado) return;
+        try
+        {
+            await JS.InvokeVoidAsync("eval", $"new Audio('{archivo}').play()");
+        }
+        catch { }
+    }
+
+    private async Task ArrancarModoMultijugador(string? codigo = null, bool esPrivada = false)
     {
         mostrandoMenuInicial = false;
+        mostrandoModalMultijugador = false;
         modoSolitario = false;
         partidaIniciada = false;
         partidaFinalizada = false;
         codigoSalaActual = "";
         jugadoresEnSala = 1;
-        mensajeLobby = "Buscando oponente...";
+        mensajeLobby = "Buscando o creando sala...";
+        errorUnirseSala = "";
 
         if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
         {
-            await hubConnection.SendAsync("UnirseAMultijugador");
+            await hubConnection.SendAsync("UnirseAMultijugador", codigo, esPrivada);
+        }
+    }
+
+    private async Task UnirseConCodigo()
+    {
+        if (string.IsNullOrWhiteSpace(codigoIngresado)) return;
+        await ArrancarModoMultijugador(codigoIngresado.Trim(), esPrivada: false);
+    }
+
+    private async Task PedirRevancha()
+    {
+        yoSoliciteRevancha = true;
+        if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
+        {
+            await hubConnection.SendAsync("SolicitarRevancha");
         }
     }
 
     private async Task ArrancarModoContrarreloj()
     {
         mostrandoMenuInicial = false;
+        mostrandoModalMultijugador = false;
         modoSolitario = true;
         partidaIniciada = true;
         partidaFinalizada = false;
@@ -627,12 +805,12 @@
             {
                 aciertosSolitario++;
                 tiempoContrarreloj += 3; // Recompensa
-                await JS.InvokeVoidAsync("eval", "new Audio('acierto.wav').play()");
+                await ReproducirSonido("acierto.wav");
             }
             else
             {
                 tiempoContrarreloj -= 5; // Penalización
-                await JS.InvokeVoidAsync("eval", "new Audio('error.wav').play()");
+                await ReproducirSonido("error.wav");
             }
 
             StateHasChanged();
@@ -679,15 +857,20 @@
         }
 
         mostrandoMenuInicial = true;
+        mostrandoModalMultijugador = false;
         partidaIniciada = false;
         partidaFinalizada = false;
         rondaCongelada = false;
         modoSolitario = false;
         codigoSalaActual = "";
+        codigoIngresado = "";
         jugadoresEnSala = 0;
         mensajeLobby = "";
         mensajeAlertaRonda = "";
         miRolDeJugador = 0;
+        esMuerteSubita = false;
+        yoSoliciteRevancha = false;
+        rivalSolicitoRevancha = false;
         StateHasChanged();
     }
 
