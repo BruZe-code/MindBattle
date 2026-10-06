@@ -8,15 +8,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Configurar .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x' # Usamos .NET 10 en sintonía con tu servidor
 
     - name: Publicar Proyecto Cliente
-      run: dotnet publish -c Release -o release --nologo
+      run: dotnet publish MindBattle.Client.csproj -c Release -o release --nologo
 
     - name: Cambiar rutas para GitHub Pages
       run: sed -i 's|<base href="/" />|<base href="/MindBattle/" />|g' release/wwwroot/index.html
